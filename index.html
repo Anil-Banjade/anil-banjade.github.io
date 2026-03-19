@@ -432,12 +432,10 @@
     </section>
 
     <script>
-
       function sendEmail() {
-
-        const EMAILJS_SERVICE_ID  = "banjade_anil_17";   // e.g. "service_abc123"
+        const EMAILJS_SERVICE_ID = "banjade_anil_17"; // e.g. "service_abc123"
         const EMAILJS_TEMPLATE_ID = "template_17ny48m";
-        
+
         const name = document.getElementById("contact-name").value.trim();
         const email = document.getElementById("contact-email").value.trim();
         const message = document.getElementById("contact-message").value.trim();
@@ -461,11 +459,11 @@
 
         // Template variables — these must match your EmailJS template
         const templateParams = {
+          name: name,
           from_name: name,
           from_email: email,
+          email: email,
           message: message,
-          to_email: "anil.banjade17@gmail.com", // where you receive emails
-          reply_to: email,
         };
 
         emailjs

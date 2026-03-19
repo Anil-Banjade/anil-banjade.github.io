@@ -11,6 +11,14 @@
       href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700&family=DM+Sans:wght@300;400&display=swap"
       rel="stylesheet"
     />
+
+    <script
+      type="text/javascript"
+      src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"
+    ></script>
+    <script type="text/javascript">
+      emailjs.init("-k-dV-f4-UmC-thYg");
+    </script>
   </head>
 
   <body>
@@ -373,22 +381,46 @@
         <!-- Right: message form -->
         <div class="contact-right">
           <label class="contact-form-label">Name</label>
-          <input class="contact-input" type="text" placeholder="Your name" />
+          <input
+            class="contact-input"
+            type="text"
+            id="contact-name"
+            placeholder="Your name"
+            required
+          />
 
           <label class="contact-form-label">Email</label>
           <input
             class="contact-input"
             type="email"
+            id="contact-email"
             placeholder="your@email.com"
+            required
           />
 
           <label class="contact-form-label">Message</label>
           <textarea
             class="contact-input contact-textarea"
+            id="contact-message"
             placeholder="What's on your mind?"
+            required
           ></textarea>
 
-          <button class="contact-submit">Send message →</button>
+          <!-- Status message shown after submission -->
+          <p
+            id="contact-status"
+            style="
+              font-size: 0.75rem;
+              letter-spacing: 0.1em;
+              margin-bottom: 1rem;
+              min-height: 1.2em;
+              transition: opacity 0.3s;
+            "
+          ></p>
+
+          <button class="contact-submit" id="contact-btn" onclick="sendEmail()">
+            Send message →
+          </button>
         </div>
       </div>
 
@@ -400,6 +432,72 @@
     </section>
 
     <script>
+
+      function sendEmail() {
+
+        const EMAILJS_SERVICE_ID  = "banjade_anil_17";   // e.g. "service_abc123"
+        const EMAILJS_TEMPLATE_ID = "template_17ny48m";
+        
+        const name = document.getElementById("contact-name").value.trim();
+        const email = document.getElementById("contact-email").value.trim();
+        const message = document.getElementById("contact-message").value.trim();
+        const btn = document.getElementById("contact-btn");
+        const status = document.getElementById("contact-status");
+
+        // Basic validation
+        if (!name || !email || !message) {
+          showStatus("Please fill in all fields.", "#c97070");
+          return;
+        }
+        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+          showStatus("Please enter a valid email address.", "#c97070");
+          return;
+        }
+
+        // Disable button while sending
+        btn.disabled = true;
+        btn.textContent = "Sending…";
+        btn.style.opacity = "0.6";
+
+        // Template variables — these must match your EmailJS template
+        const templateParams = {
+          from_name: name,
+          from_email: email,
+          message: message,
+          to_email: "anil.banjade17@gmail.com", // where you receive emails
+          reply_to: email,
+        };
+
+        emailjs
+          .send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, templateParams)
+          .then(() => {
+            showStatus("Message sent! I'll get back to you soon.", "#6aab6a");
+            // Clear form
+            document.getElementById("contact-name").value = "";
+            document.getElementById("contact-email").value = "";
+            document.getElementById("contact-message").value = "";
+          })
+          .catch((err) => {
+            console.error("EmailJS error:", err);
+            showStatus(
+              "Something went wrong. Please email me directly.",
+              "#c97070"
+            );
+          })
+          .finally(() => {
+            btn.disabled = false;
+            btn.textContent = "Send message →";
+            btn.style.opacity = "";
+          });
+      }
+
+      function showStatus(msg, color) {
+        const el = document.getElementById("contact-status");
+        el.textContent = msg;
+        el.style.color = color;
+        el.style.opacity = "1";
+      }
+
       const hamburger = document.getElementById("hamburger");
       const drawer = document.getElementById("drawer");
       const overlay = document.getElementById("overlay");

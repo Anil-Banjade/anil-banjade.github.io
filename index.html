@@ -1,0 +1,460 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Anil Banjade</title>
+    <link rel="stylesheet" href="index.css" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700&family=DM+Sans:wght@300;400&display=swap"
+      rel="stylesheet"
+    />
+  </head>
+
+  <body>
+    <nav class="navbar">
+      <div class="nav-inner">
+        <a href="#" class="logo">Anil Banjade</a>
+
+        <ul class="menu" id="menu">
+          <li><a href="#home" class="active">Home</a></li>
+          <li><a href="#projects">Projects</a></li>
+          <li><a href="#blog">Blogs</a></li>
+          <li><a href="#contact">Contact</a></li>
+        </ul>
+
+        <button
+          class="hamburger"
+          id="hamburger"
+          aria-expanded="false"
+          aria-label="Toggle menu"
+        >
+          <span></span><span></span><span></span>
+        </button>
+      </div>
+    </nav>
+
+    <div class="mobile-drawer" id="drawer">
+      <div class="drawer-overlay" id="overlay"></div>
+      <div class="drawer-panel">
+        <a href="#home">Home</a>
+        <a href="#projects">Projects</a>
+        <a href="#blog">Blogs</a>
+        <a href="#contact">Contact</a>
+      </div>
+    </div>
+
+    <div class="hero" id="home">
+      <!-- Left: photo + links -->
+      <aside class="hero-aside">
+        <div class="avatar">
+          <img src="assets/profile_ab_3.JPEG" alt="Anil Banjade" />
+        </div>
+
+        <div class="aside-links">
+          <a
+            href="/assets/Anil_Banjade_CV.pdf"
+            class="aside-link"
+            target="_blank"
+          >
+            CV / Résumé <span>↗</span>
+          </a>
+
+          <a
+            href="https://www.linkedin.com/in/anil-banjade-bb37b8203/"
+            class="aside-link"
+            target="_blank"
+          >
+            LinkedIn <span>↗</span>
+          </a>
+
+          <a
+            href="https://github.com/Anil-Banjade/"
+            class="aside-link"
+            target="_blank"
+          >
+            GitHub <span>↗</span>
+          </a>
+
+          <a href="mailto:anil.banjade17@gmail.com" class="aside-link">
+            Email <span>↗</span>
+          </a>
+        </div>
+      </aside>
+
+      <!-- Right: bio -->
+      <main class="hero-main">
+        <h1 class="hero-name">Anil Banjade</h1>
+
+        <p class="hero-affil">
+          Bachelor’s in Computer Engineering &nbsp;·&nbsp; Institute of
+          Engineering, Thapathali Campus, Nepal
+        </p>
+
+        <div class="hero-divider"></div>
+
+        <p class="hero-bio">
+          I am a fourth-year Computer Engineering student at Thapathali Campus,
+          Nepal, with a strong focus on computer vision, machine learning, and
+          3D scene understanding. My work centers on bridging classical
+          geometric methods with modern deep learning approaches to build
+          systems that can perceive and reconstruct the real world from visual
+          data.
+        </p>
+
+        <p class="hero-bio">
+          Currently, I am developing a depth-supervised NeRF-SLAM pipeline that
+          integrates visual feature extraction, pose estimation, loop closure,
+          and neural rendering for photorealistic 3D reconstruction from
+          monocular video. Alongside this, I have built and trained deep
+          learning models including U-Net for image segmentation (achieving high
+          Dice and IoU scores), GAN-based image synthesis models, and a Nepali
+          multimodal system aligning text and vision embeddings. My interests
+          lie in solving real-world perception problems at the intersection of
+          geometry, learning, and representation.
+        </p>
+
+        <p class="section-label">Interests</p>
+        <div class="interests">
+          <span class="tag">Computer Vision</span>
+          <span class="tag">Machine Learning</span>
+          <span class="tag">Deep Learning</span>
+          <span class="tag">Visual SLAM</span>
+          <span class="tag">NeRF & 3D Reconstruction</span>
+          <span class="tag">Geometric Learning</span>
+          <span class="tag">Multimodal Learning</span>
+          <span class="tag">Robotics & AR/VR</span>
+        </div>
+      </main>
+    </div>
+
+    <!-- PROJECTS SECTION -->
+    <section class="projects-section" id="projects">
+      <p class="section-heading">Projects</p>
+
+      <div class="projects-grid">
+        <!-- Featured: NeRF-SLAM -->
+        <div class="project-card">
+          <span class="project-year">2025 — Present</span>
+          <p class="project-title">
+            Bridging Classical Geometric SLAM and Neural Rendering via
+            Depth-Supervised NeRF
+          </p>
+          <p class="project-desc">
+            Developing a unified framework that combines geometric SLAM with
+            Neural Radiance Fields (NeRF) for photorealistic 3D scene
+            reconstruction from monocular video. The pipeline integrates visual
+            feature extraction, pose estimation, loop closure detection, and
+            bundle adjustment with a depth-supervised NeRF module — improving
+            geometric consistency and accelerating convergence. Targets
+            applications in robotics, AR/VR, and autonomous navigation.
+          </p>
+          <div class="project-tags">
+            <span class="project-tag">Computer Vision</span>
+            <span class="project-tag">Neural Rendering</span>
+            <span class="project-tag">3D Reconstruction</span>
+            <span class="project-tag">SLAM</span>
+            <span class="project-tag">PyTorch</span>
+          </div>
+        </div>
+
+        <!-- U-Net -->
+        <div class="project-card">
+          <span class="project-year">2025</span>
+          <p class="project-title">U-Net Based Medical Image Segmentation</p>
+          <p class="project-desc">
+            Implemented U-Net from scratch in PyTorch with encoder–decoder
+            architecture and skip connections. Applied to polyp segmentation on
+            the Kvasir endoscopic dataset and vehicle segmentation on Carvana,
+            achieving a Dice score of 0.971 and IoU of 0.948 — demonstrating
+            strong generalization to both medical and real-world visual domains.
+          </p>
+          <div class="project-tags">
+            <span class="project-tag">Medical Imaging</span>
+            <span class="project-tag">Segmentation</span>
+            <span class="project-tag">Deep Learning</span>
+            <span class="project-tag">PyTorch</span>
+          </div>
+          <a
+            class="project-link"
+            href="https://github.com/Anil-Banjade/U-Net"
+            target="_blank"
+            >GitHub ↗</a
+          >
+        </div>
+
+        <!-- GAN -->
+        <div class="project-card">
+          <span class="project-year">2025</span>
+          <p class="project-title">
+            Generative Adversarial Networks for Image Synthesis
+          </p>
+          <p class="project-desc">
+            Trained GAN and DCGAN architectures to synthesize 128×128 images
+            across MNIST, CelebA, and a custom classroom dataset. Designed
+            convolutional generator and discriminator networks, monitored
+            training with FID scores, and investigated failure modes including
+            mode collapse, aliasing artifacts, and dataset-size limitations.
+          </p>
+          <div class="project-tags">
+            <span class="project-tag">Generative Models</span>
+            <span class="project-tag">GAN / DCGAN</span>
+            <span class="project-tag">Image Synthesis</span>
+            <span class="project-tag">PyTorch</span>
+          </div>
+          <a
+            class="project-link"
+            href="https://github.com/Anil-Banjade/GAN/tree/main"
+            target="_blank"
+            >GitHub ↗</a
+          >
+        </div>
+
+        <!-- Nepali Multimodal -->
+        <div class="project-card">
+          <span class="project-year">2024</span>
+          <p class="project-title">Nepali Multimodal Large Language Model</p>
+          <p class="project-desc">
+            Aligned NepBERTa text embeddings and ResNet-50 vision embeddings
+            through projection layers and contrastive learning to build a shared
+            cross-modal embedding space. Trained a transformer-based
+            autoregressive decoder to generate Nepali text conditioned on
+            multimodal features — laying groundwork for low-resource multimodal
+            AI in Nepali.
+          </p>
+          <div class="project-tags">
+            <span class="project-tag">Multimodal Learning</span>
+            <span class="project-tag">Contrastive Learning</span>
+            <span class="project-tag">NLP</span>
+            <span class="project-tag">Low-Resource AI</span>
+          </div>
+          <a
+            class="project-link"
+            href="https://github.com/Anil-Banjade/Nepali_Multi_Modal"
+            target="_blank"
+            >GitHub ↗</a
+          >
+        </div>
+      </div>
+    </section>
+
+    <!-- EDUCATION SECTION -->
+    <!-- <section class="education-section" id="education">
+  <p class="section-heading">Education</p>
+  <div class="edu-list">
+
+    <div class="edu-card">
+      <span class="edu-period">2022 — 2026</span>
+      <div>
+        <p class="edu-degree">Bachelor in Computer Engineering</p>
+        <p class="edu-institution">Thapathali Campus, Tribhuvan University &nbsp;·&nbsp; Kathmandu, Nepal</p>
+        <p class="edu-courses">
+          <span>Relevant Coursework</span>
+          Artificial Intelligence · Digital Image Processing · Digital Signal Analysis & Processing · Data Structures & Algorithms · Probability & Statistics · Database Management Systems · Computer Graphics · Computer Networks & Security · Operating Systems
+        </p>
+      </div>
+    </div>
+
+    <div class="edu-card">
+      <span class="edu-period">2020 — 2022</span>
+      <div>
+        <p class="edu-degree">Higher Secondary School (Science)</p>
+        <p class="edu-institution">Deerwalk Sifal School &nbsp;·&nbsp; Kathmandu, Nepal</p>
+        
+      </div>
+    </div>
+
+    <div class="edu-card">
+      <span class="edu-period">Till 2020</span>
+      <div>
+        <p class="edu-degree">Lower Secondary School</p>
+        <p class="edu-institution">Little Angels' School &nbsp;·&nbsp; Lalitpur, Nepal</p>
+      </div>
+    </div>
+
+  </div>
+</section> -->
+
+    <!-- BLOG SECTION -->
+    <section class="blog-section" id="blog">
+      <div class="blog-section-header">
+        <p class="section-heading" style="margin-bottom: 0">Blogs</p>
+      </div>
+
+      <div class="blog-list">
+        <a class="blog-card" href="#">
+          <span class="blog-date">Jun 2025</span>
+          <div>
+            <p class="blog-title">Depth-supervised NeRF-SLAM pipeline</p>
+            <p class="blog-excerpt">
+              A walkthrough of combining classical geometric SLAM with neural
+              rendering for photorealistic 3D reconstruction from monocular
+              video.
+            </p>
+          </div>
+          <div
+            style="
+              display: flex;
+              flex-direction: column;
+              align-items: flex-end;
+              gap: 0.5rem;
+            "
+          >
+            <span class="blog-topic">Computer Vision</span>
+            <span class="blog-arrow">→</span>
+          </div>
+        </a>
+
+        <a class="blog-card" href="#">
+          <span class="blog-date">Apr 2025</span>
+          <div>
+            <p class="blog-title">Epipolar and Pn</p>
+            <p class="blog-excerpt">
+              What mode collapse, aliasing artifacts, and FID scores taught me
+              about generative model stability.
+            </p>
+          </div>
+          <div
+            style="
+              display: flex;
+              flex-direction: column;
+              align-items: flex-end;
+              gap: 0.5rem;
+            "
+          >
+            <span class="blog-topic">Generative Models</span>
+            <span class="blog-arrow">→</span>
+          </div>
+        </a>
+      </div>
+    </section>
+
+    <!-- CONTACT SECTION -->
+    <section class="contact-section" id="contact">
+      <p class="section-heading" style="margin-bottom: 3rem">Contact</p>
+
+      <div class="contact-inner">
+        <!-- Left: intro + links -->
+        <div>
+          <h2 class="contact-left-heading">Let's talk<span></span></h2>
+          <p class="contact-left-sub">
+            I'm always happy to connect with researchers, faculty, or fellow
+            students interested in computer vision, machine learning. Feel free
+            to reach out about research, collaborations, or just to say hello.
+          </p>
+          <div class="contact-links">
+            <a class="contact-link-row" href="mailto:anil.banjade17@gmail.com">
+              anil.banjade17@gmail.com
+              <span class="contact-link-arrow">→</span>
+            </a>
+            <a
+              class="contact-link-row"
+              href="https://www.linkedin.com/in/anil-banjade-bb37b8203/"
+              target="_blank"
+            >
+              LinkedIn
+              <span class="contact-link-arrow">→</span>
+            </a>
+            <a
+              class="contact-link-row"
+              href="https://github.com/Anil-Banjade/"
+              target="_blank"
+            >
+              GitHub
+              <span class="contact-link-arrow">→</span>
+            </a>
+          </div>
+        </div>
+
+        <div class="contact-divider-v"></div>
+
+        <!-- Right: message form -->
+        <div class="contact-right">
+          <label class="contact-form-label">Name</label>
+          <input class="contact-input" type="text" placeholder="Your name" />
+
+          <label class="contact-form-label">Email</label>
+          <input
+            class="contact-input"
+            type="email"
+            placeholder="your@email.com"
+          />
+
+          <label class="contact-form-label">Message</label>
+          <textarea
+            class="contact-input contact-textarea"
+            placeholder="What's on your mind?"
+          ></textarea>
+
+          <button class="contact-submit">Send message →</button>
+        </div>
+      </div>
+
+      <!-- Footer -->
+      <div class="contact-footer">
+        <span>Anil Banjade &nbsp;·&nbsp; Kathmandu, Nepal</span>
+        <span>&copy; 2025</span>
+      </div>
+    </section>
+
+    <script>
+      const hamburger = document.getElementById("hamburger");
+      const drawer = document.getElementById("drawer");
+      const overlay = document.getElementById("overlay");
+
+      function openMenu() {
+        drawer.classList.add("open");
+        hamburger.setAttribute("aria-expanded", "true");
+        document.body.style.overflow = "hidden";
+      }
+      function closeMenu() {
+        drawer.classList.remove("open");
+        hamburger.setAttribute("aria-expanded", "false");
+        document.body.style.overflow = "";
+      }
+
+      hamburger.addEventListener("click", () =>
+        drawer.classList.contains("open") ? closeMenu() : openMenu()
+      );
+      overlay.addEventListener("click", closeMenu);
+      document
+        .querySelectorAll(".drawer-panel a")
+        .forEach((l) => l.addEventListener("click", closeMenu));
+
+      // Active nav on scroll
+      const navLinks = document.querySelectorAll(".menu a");
+      const sectionIds = ["home", "projects", "blog", "contact"];
+
+      function updateActive() {
+        const scrollY = window.scrollY + 100;
+        let current = "home";
+
+        // If scrolled near the bottom of the page, force last section active
+        const nearBottom =
+          window.scrollY + window.innerHeight >=
+          document.body.scrollHeight - 50;
+
+        if (nearBottom) {
+          current = "contact";
+        } else {
+          sectionIds.forEach((id) => {
+            const el = document.getElementById(id);
+            if (el && el.offsetTop <= scrollY) current = id;
+          });
+        }
+
+        navLinks.forEach((a) => {
+          a.classList.toggle(
+            "active",
+            a.getAttribute("href") === "#" + current
+          );
+        });
+      }
+
+      window.addEventListener("scroll", updateActive, { passive: true });
+      updateActive();
+    </script>
+  </body>
+</html>

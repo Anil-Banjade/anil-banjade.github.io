@@ -1,0 +1,653 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Epipolar Geometry — Anil Banjade</title>
+<meta name="description" content="A derivation of the epipolar constraint, the essential and fundamental matrices, the eight-point algorithm, and pose recovery from two views.">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+
+<link rel="stylesheet" href="epipolar-geometry.css">
+<link rel="stylesheet" href="/assets/navbar.css" />
+<script>
+  window.MathJax = {
+    tex: {
+      inlineMath: [['\\(', '\\)']],
+      displayMath: [['\\[', '\\]']],
+      macros: {
+        mat: ["{#1}", 1],
+        vect: ["{\\mathbf{#1}}", 1]
+      }
+    },
+    svg: { fontCache: 'global' }
+  };
+</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/3.2.2/es5/tex-mml-chtml.js" id="MathJax-script" async></script>
+</head>
+<body>
+
+<!-- <header class="site-header">
+  <a class="brand" href="../../index.html">Anil Banjade</a>
+  <nav>
+    <a href="../../index.html">Home</a>
+    <a href="../../index.html#projects">Projects</a>
+    <a href="../../index.html#blog">Blog</a>
+    <a href="../../index.html#contact">Contact</a>
+  </nav>
+</header> -->
+
+<div id="navbar-placeholder"></div>
+
+<div class="page">
+
+  <div class="masthead">
+    
+    <h1 class="title">Epipolar Geometry</h1>
+    <p class="dek">
+      Epipolar Geometry reduces feature matching from a 2D search to a 1D search by searching along an epipolar line in the second image for a corresponding point from the first image. It also helps determine the relative pose \((\mathrm{R}, \mathbf{t})\) between two cameras, which serves as the foundation for recovering camera trajectories and calculating the depth of 3D scene points via triangulation.
+    </p>
+    <div class="meta">
+      <span><strong>Anil Banjade</strong></span>
+      <span>2026</span>
+    </div>
+  </div>
+
+  <nav class="toc" aria-label="Table of contents">
+    <p class="toc-label">Contents</p>
+    <ol>
+      <li><a href="#introduction">Introduction</a></li>
+      <li><a href="#notation">Notation</a></li>
+      <li><a href="#pinhole">The Pinhole Camera Model</a></li>
+      <li><a href="#terminology">Two-View Geometry: Terminology</a></li>
+      <li><a href="#constraint">The Epipolar Constraint</a></li>
+      <li><a href="#decomposing">Decomposing the Essential Matrix</a></li>
+    </ol>
+  </nav>
+
+  <article>
+
+    <details class="toc-mobile">
+      <summary>Contents</summary>
+      <ol>
+        <li><a href="#introduction">Introduction</a></li>
+        <li><a href="#notation">Notation</a></li>
+        <li><a href="#pinhole">The Pinhole Camera Model</a></li>
+        <li><a href="#terminology">Two-View Geometry: Terminology</a></li>
+        <li><a href="#constraint">The Epipolar Constraint</a></li>
+        <li><a href="#decomposing">Decomposing the Essential Matrix</a></li>
+      </ol>
+    </details>
+
+    <section id="introduction">
+      <h2><span class="num">1</span> Introduction</h2>
+      <p>Imagine a person with only one eye, the world would look as flat to them as it does to an
+        ant. Having two separated eyes lets us perceive the depth of a 3D world. Epipolar geometry
+        models intrinsic geometry of this stereoscopic setup, two cameras see the same point
+        from slightly different angles, and that difference of angle is what encodes depth.</p>
+        <p>I utilized this concept in a project combining SLAM and NeRF (<a href="https://github.com/Anil-Banjade/SLAM" target="_blank" rel="noopener">code here</a>), where I extracted frames from video, detected features with FAST, matched them with BRIEF, and used epipolar geometry to recover the relative pose between camera frames.</p>
+      
+      </section>
+
+    <section id="notation">
+      <h2><span class="num">2</span> Notation</h2>
+      <p>Bold letters denote vectors, upright letters denote matrices, and lowercase italic letters
+        denote scalars. Subscripts <code>l</code> and <code>r</code> denotes the left and
+        right camera respectively.</p>
+
+      <div class="table-wrap">
+        <table class="notation">
+          <caption>Scalars</caption>
+          <thead><tr><th>Symbol</th><th>Type</th><th>Meaning</th></tr></thead>
+          <tbody>
+            <tr><td>\(u, v\)</td><td>scalar</td><td>pixel coordinates</td></tr>
+            <tr><td>\(f_x, f_y\)</td><td>scalar</td><td>focal lengths, in pixels</td></tr>
+            <tr><td>\(c_x, c_y\)</td><td>scalar</td><td>principal-point coordinates</td></tr>
+            <tr><td>\(s\)</td><td>scalar</td><td>skew coefficient</td></tr>
+            <tr><td>\(\lambda\)</td><td>scalar</td><td>projective (homogeneous) scale factor</td></tr>
+            <tr><td>\(Z_c, Z_l, Z_r\)</td><td>scalar</td><td>depth of a point along a camera's optical axis</td></tr>
+            <tr><td>\(u_i, v_i, u_i', v_i'\)</td><td>scalar</td><td>pixel coordinates of the \(i\)-th point correspondence</td></tr>
+            <tr><td>\(\sigma, \sigma_1, \sigma_2, \sigma_3\)</td><td>scalar</td><td>singular values</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="table-wrap">
+        <table class="notation">
+          <caption>Vectors — 3D points / directions</caption>
+          <thead><tr><th>Symbol</th><th>Type</th><th>Meaning</th></tr></thead>
+          <tbody>
+            <tr><td>\(\mathbf{X}_w\)</td><td>\(4\times1\)</td><td>world coordinates of a 3D point</td></tr>
+            <tr><td>\(\mathbf{X}_c\)</td><td>\(3\times1\)</td><td>a 3D point expressed in a generic camera's frame</td></tr>
+            <tr><td>\(\mathbf{X}_l, \mathbf{X}_r\)</td><td>\(3\times1\)</td><td>the same scene point \(P\) expressed in the left / right camera frame</td></tr>
+            <tr><td>\(\mathbf{t}\)</td><td>\(3\times1\)</td><td>translation between camera frames; also the baseline vector \(\overrightarrow{O_lO_r}\)</td></tr>
+            <tr><td>\(\mathbf{n}\)</td><td>\(3\times1\)</td><td>normal to the epipolar plane</td></tr>
+            <tr><td>\(\mathbf{u}_3\)</td><td>\(3\times1\)</td><td>third column of \(\mathrm{U}_E\)</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="table-wrap">
+        <table class="notation">
+          <caption>Vectors — image space (homogeneous, \(3\times1\))</caption>
+          <thead><tr><th>Symbol</th><th>Type</th><th>Meaning</th></tr></thead>
+          <tbody>
+            <tr><td>\(\mathbf{x} = (u,v,1)^\top\)</td><td>vector</td><td>homogeneous pixel coordinate</td></tr>
+            <tr><td>\(\mathbf{x}_l, \mathbf{x}_r\)</td><td>vector</td><td>homogeneous pixel coordinates in the left / right image</td></tr>
+            <tr><td>\(\hat{\mathbf{x}} = \mathrm{K}^{-1}\mathbf{x}\)</td><td>vector</td><td>normalized image coordinate, i.e. ray direction</td></tr>
+            <tr><td>\(\mathbf{x}_{l,i}, \mathbf{x}_{r,i}\)</td><td>vector</td><td>the \(i\)-th correspondence pair</td></tr>
+            <tr><td>\(\mathbf{l}_l, \mathbf{l}_r\)</td><td>vector</td><td>homogeneous line coefficients of an epipolar line</td></tr>
+            <tr><td>\(\mathbf{e}_l, \mathbf{e}_r\)</td><td>vector</td><td>epipoles</td></tr>
+            <tr><td>\(\mathbf{f}\)</td><td>\(9\times1\)</td><td>vectorized entries of \(\mathrm{F}\), \(\mathbf{f} = (F_{11},\dots,F_{33})^\top\)</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="table-wrap">
+        <table class="notation">
+          <caption>Matrices</caption>
+          <thead><tr><th>Symbol</th><th>Type</th><th>Meaning</th></tr></thead>
+          <tbody>
+            <tr><td>\(\mathrm{K}, \mathrm{K}_l, \mathrm{K}_r\)</td><td>\(3\times3\)</td><td>intrinsic matrices</td></tr>
+            <tr><td>\(\mathrm{R}\)</td><td>\(3\times3\), \(\in SO(3)\)</td><td>rotation matrix</td></tr>
+            <tr><td>\([\mathbf{t}]_\times\)</td><td>\(3\times3\), skew-symmetric</td><td>cross-product matrix of \(\mathbf{t}\)</td></tr>
+            <tr><td>\(\mathrm{E}\)</td><td>\(3\times3\), rank 2</td><td>essential matrix, \(\mathrm{E} = [\mathbf{t}]_\times \mathrm{R}\)</td></tr>
+            <tr><td>\(\mathrm{F}\)</td><td>\(3\times3\), rank 2</td><td>fundamental matrix</td></tr>
+            <tr><td>\(\mathrm{A}\)</td><td>\(N\times9\)</td><td>eight-point design matrix</td></tr>
+            <tr><td>\(\mathrm{U}_A, \Sigma_A, \mathrm{V}_A\)</td><td>matrices</td><td>SVD factors of \(\mathrm{A}\)</td></tr>
+            <tr><td>\(\tilde{\mathrm{F}}\)</td><td>\(3\times3\)</td><td>least-squares estimate of \(\mathrm{F}\) before the rank-2 projection</td></tr>
+            <tr><td>\(\mathrm{U}_F, \Sigma_F, \mathrm{V}_F\)</td><td>matrices</td><td>SVD factors of \(\tilde{\mathrm{F}}\)</td></tr>
+            <tr><td>\(\Sigma_F^{(2)}\)</td><td>\(3\times3\), diagonal</td><td>\(\Sigma_F\) with its smallest singular value zeroed</td></tr>
+            <tr><td>\(\mathrm{U}_E, \Sigma_E, \mathrm{V}_E\)</td><td>matrices</td><td>SVD factors of \(\mathrm{E}\)</td></tr>
+            <tr><td>\(\mathrm{W}\)</td><td>\(3\times3\), fixed</td><td>helper matrix used to extract \(\mathrm{R}\) from the SVD of \(\mathrm{E}\) </td></tr>
+          </tbody>
+        </table>
+      </div> 
+
+      <div class="table-wrap">
+        <table class="notation">
+          <caption>Points and indices</caption>
+          <thead><tr><th>Symbol</th><th>Type</th><th>Meaning</th></tr></thead>
+          <tbody>
+            <tr><td>\(O_l, O_r\)</td><td>point in space</td><td>optical centers of the left / right camera</td></tr>
+            <tr><td>\(P\)</td><td>point in space</td><td>the observed 3D scene point</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+    <p>Before deriving the epipolar constraint, let's review the pinhole camera model, which relates
+      3D points to image pixels.</p>
+  
+    <section id="pinhole">
+      <h2><span class="num">3</span> The Pinhole Camera Model</h2>
+      <p>A pinhole camera model maps a 3D point in the world to a 2D point in the image plane. In
+        homogeneous coordinates this projection is linear:</p>
+
+      <div class="eq-block">
+        \[
+        \lambda\, \mathbf{x} = \mathrm{K}\,[\mathrm{R} \mid \mathbf{t}]\, \mathbf{X}_w,
+        \qquad
+        \mathbf{x} = \begin{bmatrix} u \\ v \\ 1 \end{bmatrix}, \quad
+        \mathbf{X}_w = \begin{bmatrix} X_w \\ Y_w \\ Z_w \\ 1 \end{bmatrix},
+        \]
+      </div>
+
+      <p>where \(\mathbf{x}\) is the homogeneous pixel coordinate, \(\mathbf{X}_w\) the homogeneous
+        world coordinate of the 3D point, and \(\lambda\) a nonzero scale factor, equal to the depth
+        of the point along the camera's optical axis.</p>
+
+      <h3>Intrinsic matrix</h3>
+      <p>\(\mathrm{K}\) encodes the internal, camera-specific parameters:</p>
+      <div class="eq-block">
+        \[
+        \mathrm{K} = \begin{bmatrix} f_x & s & c_x \\ 0 & f_y & c_y \\ 0 & 0 & 1 \end{bmatrix},
+        \]
+      </div>
+      <p>where \(f_x, f_y\) are the focal lengths in pixels along the image \(x\)- and \(y\)-axes,
+        \(c_x, c_y\) the principal point, and \(s\) the skew coefficient (zero for most modern
+        sensors). \(\mathrm{K}\) is obtained either from manufacturer specifications, or using camera calibration.</p>
+
+      <h3>Extrinsic parameters</h3>
+      <p>\(\mathrm{R} \in SO(3)\) and \(\mathbf{t} \in \mathbb{R}^3\) map world coordinates into the
+        camera's frame, together they are the extrinsic parameters, and their <em>relative</em>
+        value between two cameras is exactly what epipolar geometry aims to recover.</p>
+
+
+      <h3>3.1 &nbsp;Projection equations for a single camera</h3>
+      <p>Consider a point \(\mathbf{X}_c = (X_c, Y_c, Z_c)^\top\) in a camera's frame (for which
+        \(\mathrm{R}=\mathrm{I}, \mathbf{t}=\mathbf{0}\)). 
+        <br>
+        Since
+        \[
+        \angle OQP=\angle OMN=90^\circ,
+        \]
+      and
+        \[
+        \angle POQ=\angle MON=\theta,
+        \]
+        we have,
+        \[
+        \triangle OPQ \sim \triangle OMN.
+        \]</p>
+        
+        <figure class="fig">
+          <img src="perspective_final.png" alt="Side-view diagram of a pinhole camera: the optical center O, the virtual image plane at Z=f, a scene point P=(X_c,Y_c,Z_c), its projection x=(u,v,1), and the similar-triangle construction u/f = X_c/Z_c.">
+          <figcaption><span class="fig-num">Fig. 1</span> Perspective projection of camera coordinate point \(P(X_c, Y_c, Z_c)\) onto the virtual image plane at \(Z = f\) to obtain pixel coordinates \(\mathbf{x} = (u, v, 1)^T\).</figcaption>
+        
+        </figure>
+
+      <p>Perspective projection by similar triangles gives</p>
+      <div class="eq-block">
+        \[
+        u = f_x \frac{X_c}{Z_c} + c_x, \qquad v = f_y \frac{Y_c}{Z_c} + c_y.
+        \]
+      </div>
+      <p>The physical image plane lies behind the optical center, at \(Z=-f\), and the projected
+        image is inverted. But, It is standard to model a <em>virtual</em> image plane at
+        \(Z=+f\) in front of the optical center which removes the inversion without changing the
+        projective geometry. \(c_x\) and \(c_y\) are introduced because
+        projection is measured from the optical axis, whereas pixel coordinates are indexed
+        from a corner of the image.</p>
+
+
+      <p>Multiplying both sides by \(Z_c\), and expressing in matrix form gives</p>
+      <div class="eq-block">
+        \[
+        Z_c \begin{bmatrix} u \\ v \\ 1 \end{bmatrix}
+        = \begin{bmatrix} f_x & 0 & c_x \\ 0 & f_y & c_y \\ 0 & 0 & 1 \end{bmatrix}
+          \begin{bmatrix} X_c \\ Y_c \\ Z_c \end{bmatrix}
+        = \mathrm{K}\, \mathbf{X}_c \quad (\text{here } s=0).
+        \]
+      </div>
+      <p>Equivalently,</p>
+
+      <div class="key-eq">
+        <!-- <span class="eq-tag"></span> -->
+        \[
+        Z_c\, \mathbf{x} = \mathrm{K}\, \mathbf{X}_c
+        \qquad \Longleftrightarrow \qquad
+        \mathbf{X}_c = Z_c\, \mathrm{K}^{-1}\, \mathbf{x}.
+        \]
+      </div>
+
+      <p>The quantity \(\hat{\mathbf{x}} = \mathrm{K}^{-1}\mathbf{x} = \mathbf{X}_c/Z_c\) is the
+        <strong>normalized image coordinate</strong>. It is direction of
+        the ray from the camera center to the 3D point, independent of depth, expressed in the camera's frame.</p>
+
+      <h3>3.2 &nbsp;Left and right camera</h3>
+      <p>Applying this to the left and right cameras (subscripts \(l, r\)),</p>
+      <div class="eq-block">
+        \[
+        Z_l\, \mathbf{x}_l = \mathrm{K}_l\, \mathbf{X}_l, \qquad
+        Z_r\, \mathbf{x}_r = \mathrm{K}_r\, \mathbf{X}_r,
+        \]
+      </div>
+      <p>where, \(\mathbf{x}_l=(u_l,v_l,1)^\top\), \(\mathbf{x}_r=(u_r,v_r,1)^\top\), and
+        \(\mathbf{X}_l=(X_l,Y_l,Z_l)^\top\), \(\mathbf{X}_r=(X_r,Y_r,Z_r)^\top\),
+        </p>
+      <div class="eq-block">
+        \[
+        \mathrm{K}_l = \begin{bmatrix} f_x^{(l)} & 0 & c_x^{(l)} \\ 0 & f_y^{(l)} & c_y^{(l)} \\ 0 & 0 & 1 \end{bmatrix},
+        \qquad
+        \mathrm{K}_r = \begin{bmatrix} f_x^{(r)} & 0 & c_x^{(r)} \\ 0 & f_y^{(r)} & c_y^{(r)} \\ 0 & 0 & 1 \end{bmatrix}.
+        \]
+      </div>
+      <p>Normalized ray directions are given as</p>
+      <div class="eq-block">
+        \[
+        \hat{\mathbf{x}}_l = \mathrm{K}_l^{-1}\mathbf{x}_l = \frac{\mathbf{X}_l}{Z_l}, \qquad
+        \hat{\mathbf{x}}_r = \mathrm{K}_r^{-1}\mathbf{x}_r = \frac{\mathbf{X}_r}{Z_r},
+        \]
+      </div>
+    </section>
+
+    
+    <div class="note">
+      <span class="tag">Note</span>
+      <p> In the camera model, \(\mathrm{R}, \mathbf{t}\) denotes a generic world-to-camera extrinsics.
+        From now on, \(\mathrm{R}, \mathbf{t}\) will represent pose of the right camera relative to the left camera.
+      </p>
+    </div>
+  </section>
+
+
+    <section id="terminology">
+      <h2><span class="num">4</span> Two-View Geometry: Terminology</h2>
+      <p>Let \(O_l, O_r\) be the optical centers of the left and right cameras, and \(P\) a 3D scene
+        point observed by both.</p>
+      <ul>
+        <li><strong>Baseline</strong> — the segment \(O_lO_r\) joining the two centers.</li>
+        <li><strong>Epipolar plane</strong> — the plane through \(P, O_l, O_r\). It changes with
+          \(P\), but always contains the baseline.</li>
+        <li><strong>Epipole</strong> — the point where the baseline intersects an image plane.
+          \(\mathbf{e}_r\) in right image is the projection of \(O_l\), and \(\mathbf{e}_l\) in left image
+          is the projection of \(O_r\). Every epipolar plane passes through both epipoles, and also
+          epipolar lines in an image pass through that image's epipole.</li>
+        <li><strong>Epipolar line</strong> — the intersection of an epipolar plane with an image
+          plane. Given \(\mathbf{x}_l\), the corresponding point \(\mathbf{x}_r\) is constrained to
+          lie on the epipolar line that is the image of the ray \(O_lP\)</li>
+      </ul>
+    </section>
+
+   
+    <section id="constraint">
+      <h2><span class="num">5</span> The Epipolar Constraint</h2>
+      <p>The epipolar constraint is derived algebraically using Coplanarity of \(O_l, O_r, P\). Two vectors lying in the epipolar plane are the baseline \(\mathbf{t}\)
+        and the ray to \(P\), \(\mathbf{X}_l\), so the plane's normal is</p>
+      <div class="eq-block">
+        \[
+        \mathbf{n} = \mathbf{t} \times \mathbf{X}_l.
+        \]
+      </div>
+
+      <figure class="fig fig-interactive">
+        <iframe src="figure_final.html" title="Interactive epipolar geometry figure" loading="lazy"></iframe>
+        <figcaption><span class="fig-num">Fig. 2</span>Epipolar Geometry setup to determine relative pose between cameras.</figcaption>
+      </figure>
+
+      <p>The relative pose between the two cameras is the rotation \(\mathrm{R}\) and translation
+        \(\mathbf{t}\) mapping right-camera coordinates into the left camera's frame (
+        world frame = left-camera frame,  as optical center of left camera frame is considered to be origin of world frame):</p>
+      <div class="eq-block">
+        \[
+        \mathbf{X}_l = \mathrm{R}\, \mathbf{X}_r + \mathbf{t}. \tag{extrinsic}
+        \]
+      </div>
+      <p>(Setting \(\mathbf{X}_r = \mathbf{0}\), the right camera's center, shows that
+        \(\mathbf{t}\) is exactly \(O_r\) expressed in the left frame, i.e. the baseline vector from
+        \(O_l\) to \(O_r\).)</p>
+
+      <p>Substituting into \(\mathbf{n}\),</p>
+      <div class="eq-block">
+        \[
+        \mathbf{n} = \mathbf{t} \times (\mathrm{R}\mathbf{X}_r + \mathbf{t})
+        = \mathbf{t}\times(\mathrm{R}\mathbf{X}_r) + \underbrace{\mathbf{t}\times\mathbf{t}}_{=\,\mathbf{0}}
+        = \mathbf{t} \times (\mathrm{R}\mathbf{X}_r).
+        \]
+      </div>
+      <p>Since \(\mathbf{X}_l\) also lies in the epipolar plane, it is perpendicular to \(\mathbf{n}\):</p>
+      <div class="eq-block">
+        \[
+        \mathbf{X}_l \cdot \mathbf{n} = \mathbf{X}_l \cdot \big(\mathbf{t} \times \mathrm{R}\mathbf{X}_r\big) = 0.
+        \]
+      </div>
+      <p>Writing the cross product with the fixed vector \(\mathbf{t}=(t_x,t_y,t_z)^\top\) as
+        multiplication by the skew-symmetric matrix \([\mathbf{t}]_\times\), so that
+        \(\mathbf{t}\times\mathbf{v} = [\mathbf{t}]_\times\mathbf{v}\) for any \(\mathbf{v}\),</p>
+      <div class="eq-block">
+        \[
+        [\mathbf{t}]_\times = \begin{bmatrix} 0 & -t_z & t_y \\ t_z & 0 & -t_x \\ -t_y & t_x & 0 \end{bmatrix},
+        \]
+      </div>
+      <p>the coplanarity condition becomes</p>
+      <div class="eq-block">
+        \[
+        \mathbf{X}_l^\top\, [\mathbf{t}]_\times\, \mathrm{R}\, \mathbf{X}_r = 0.
+        \]
+      </div>
+      <blockquote>
+        <p><strong>Note:</strong> The dot product \(\mathbf{a} \cdot \mathbf{b}\) is rewritten in matrix form as \(\mathbf{a}^\top \mathbf{b}\), which is why the vector \(\mathbf{X}_l\) transitions to its transpose \(\mathbf{X}_l^\top\) in the final coplanarity equation.</p>
+      </blockquote>
+
+
+
+
+
+
+
+      <p>Expressed in normalized camera coordinates, the <strong>epipolar
+        constraint</strong> is</p>
+
+      <div class="key-eq">
+        <span class="eq-tag">The epipolar constraint</span>
+        \[
+        \mathbf{X}_l^\top \mathrm{E}\, \mathbf{X}_r = 0
+        \qquad \text{equivalently} \qquad
+        \hat{\mathbf{x}}_l^\top \mathrm{E}\, \hat{\mathbf{x}}_r = 0,
+        \qquad
+        \mathrm{E} = [\mathbf{t}]_\times\, \mathrm{R}
+        \]
+      </div>
+      
+        <p>\(\mathbf{X}_l\) and \(\hat{\mathbf{x}}_l = \mathbf{X}_l/Z_l\) point in the same direction and
+          they only differ by the positive scalar \(Z_l\). So multiplying by \(Z_l\) (and
+          \(Z_r\) on the right side) can never turn a zero product into a nonzero one, or vice
+          versa. This means the constraint holds equally well whether we use the raw 3D coordinates
+          \(\mathbf{X}_l, \mathbf{X}_r\) or the normalized image coordinates \(\hat{\mathbf{x}}_l,
+          \hat{\mathbf{x}}_r\), and the normalized coordinate can actually be computed from pixel values and intrinsic matrix.</p>
+        
+        
+          <p>\(\mathrm{E} = [\mathbf{t}]_\times\mathrm{R}\) is made up of the
+          relative pose \((\mathrm{R}, \mathbf{t})\). It don't require a scene point
+          or a camera intrinsic. So \(\mathrm{E}\) stays exactly the same no matter which 3D point
+          \(P\) we're looking at, and no matter what the cameras' focal lengths or principal points
+          happen to be. That is very important as once we estimate \(\mathrm{E}\)
+          using point correspondences, we can decompose it to recover
+          \(\mathrm{R}\) and \(\mathbf{t}\).</p>
+
+
+      <h3>5.1 &nbsp;Pixel coordinates: the fundamental matrix</h3>
+      <p>Substituting \(\mathbf{X}_l = Z_l\mathrm{K}_l^{-1}\mathbf{x}_l\) and \(\mathbf{X}_r =
+        Z_r\mathrm{K}_r^{-1}\mathbf{x}_r\) into the epipolar constraint,</p>
+      <div class="eq-block">
+        \[
+        \big(Z_l\, \mathbf{x}_l^\top \mathrm{K}_l^{-\top}\big)\, \mathrm{E}\, \big(Z_r\, \mathrm{K}_r^{-1}\mathbf{x}_r\big) = 0.
+        \]
+      </div>
+      <p>The depths \(Z_l, Z_r\) are positive, leaving</p>
+      <div class="eq-block">
+        \[
+        \mathbf{x}_l^\top \underbrace{\big(\mathrm{K}_l^{-\top} \mathrm{E}\, \mathrm{K}_r^{-1}\big)}_{\displaystyle \mathrm{F}}\, \mathbf{x}_r = 0,
+        \qquad
+        \mathbf{x}_l^\top \mathrm{F}\, \mathbf{x}_r = 0,
+        \]
+      </div>
+      <p>where the <strong>fundamental matrix</strong> is</p>
+
+      <div class="key-eq">
+        <span class="eq-tag">Fundamental matrix</span>
+        \[
+        \mathrm{F} = \mathrm{K}_l^{-\top} \mathrm{E}\, \mathrm{K}_r^{-1}
+        = \mathrm{K}_l^{-\top} [\mathbf{t}]_\times\, \mathrm{R}\, \mathrm{K}_r^{-1}.
+        \]
+      </div>
+
+      <p>Unlike \(\mathrm{E}\), \(\mathrm{F}\) relates raw pixel coordinates directly \(\mathbf{x}_l^\top \mathrm{F}\, \mathbf{x}_r = 0\) and requires no
+        camera calibration, which is why it is estimated first in practice (eight-point
+        algorithm), with \(\mathrm{E} = \mathrm{K}_l^\top \mathrm{F}\, \mathrm{K}_r\) recovered
+        afterward if the intrinsics are known.</p>
+
+      <p>For \(\mathbf{x}_l\) in the left image, the equation \(\mathbf{x}_l^\top\mathrm{F}\mathbf{x}_r=0\)
+        defines the epipolar line \(\mathbf{l}_r = \mathrm{F}^\top\mathbf{x}_l\) in the right image,
+        on which the true correspondence must lie, and similarly \(\mathbf{l}_l = \mathrm{F}\mathbf{x}_r\)
+        is the epipolar line in the left image for \(\mathbf{x}_r\) in the right image. All epipolar lines in
+        the right image meet at \(\mathbf{e}_r\), and all in the left meet at \(\mathbf{e}_l\), so</p>
+      <div class="eq-block">
+        \[
+        \mathrm{F}\, \mathbf{e}_r = \mathbf{0}, \qquad \mathrm{F}^\top \mathbf{e}_l = \mathbf{0}.
+        \]
+      </div>
+
+      
+
+
+      <h3> &nbsp;Degrees of freedom</h3>
+      <ul>
+        <li>\(\mathrm{F}\) has 9 entries, but because it is defined up to scale (\(-1\)) and must satisfy the constraint \(\det(\mathrm{F}) = 0\) (\(-1\)), it has \(9 - 1 - 1 = 7\) degrees of freedom.</li>
+        <li>\(\mathrm{E}\) has 5 degrees of freedom: 3
+          for \(\mathrm{R}\) and 2 for the <em>direction</em> of \(\mathbf{t}\) (its magnitude
+          cannot be recovered from two views alone which is the classical scale ambiguity of two-view
+          geometry).</li>
+      </ul>
+
+      <h3>5.2 &nbsp;The Eight-Point Algorithm</h3>
+      <p>The eight-point algorithm estimates \(\mathrm{F}\) from correspondences alone, without
+        knowing intrinsics or extrinsics. For a correspondence pair</p>
+      <div class="eq-block">
+        \[
+        \mathbf{x}_{l,i} = \begin{bmatrix} u_i \\ v_i \\ 1 \end{bmatrix}, \qquad
+        \mathbf{x}_{r,i} = \begin{bmatrix} u_i' \\ v_i' \\ 1 \end{bmatrix}, \qquad
+        \mathbf{x}_{l,i}^\top \mathrm{F}\, \mathbf{x}_{r,i} = 0,
+        \]
+      </div>
+      <p>Expanding into a linear equation, we get:</p>
+      <div class="eq-block">
+        \[
+        \begin{bmatrix} u_iu_i' & v_i'u_i & u_i & u_i'v_i & v_iv_i' & v_i & u_i' & v_i' & 1 \end{bmatrix}
+        \underbrace{\begin{bmatrix} F_{11} \\ F_{12} \\ F_{13} \\ F_{21} \\ F_{22} \\ F_{23} \\ F_{31} \\ F_{32} \\ F_{33} \end{bmatrix}}_{\displaystyle \mathbf{f}}
+        = 0.
+        \]
+      </div>
+
+        <p>\(\mathrm{F}\) has 9 entries, but scaling \(\mathrm{F}\) by any nonzero number doesn't
+          change whether \(\mathbf{x}_l^\top \mathrm{F}\, \mathbf{x}_r = 0\) holds, so the overall
+          scale of \(\mathrm{F}\) can never be pinned down i.e we can't differentiate F, 2F, 5F. only 8 of its 9 entries are really
+          free. Each correspondence gives one linear equation in these unknowns, so at least 8
+          correspondences are needed to solve for \(\mathrm{F}\). Hence the name "eight-point
+          algorithm." Stacking one such equation per correspondence gives</p>
+      <div class="eq-block">
+        \[
+        \mathrm{A} = \begin{bmatrix}
+          u_1u_1' & v_1'u_1 & u_1 & u_1'v_1 & v_1v_1' & v_1 & u_1' & v_1' & 1 \\
+          u_2u_2' & v_2'u_2 & u_2 & u_2'v_2 & v_2v_2' & v_2 & u_2' & v_2' & 1 \\
+          \vdots & \vdots & \vdots & \vdots & \vdots & \vdots & \vdots & \vdots & \vdots \\
+          u_Nu_N' & v_N'u_N & u_N & u_N'v_N & v_Nv_N' & v_N & u_N' & v_N' & 1
+        \end{bmatrix},
+        \qquad
+        \mathrm{A}\mathbf{f} = \mathbf{0}.
+        \]
+      </div>
+      <p>This homogeneous system is solved using least-squares SVD,</p>
+      <div class="eq-block">
+        \[
+        \mathrm{A} = \mathrm{U}_A\, \Sigma_A\, \mathrm{V}_A^\top,
+        \]
+      </div>
+      <p>taking \(\mathbf{f}\) to be the last column of \(\mathrm{V}_A\) (the singular vector of
+        smallest singular value). Reshaping \(\mathbf{f}\) into a \(3\times3\) matrix gives an
+        estimate \(\tilde{\mathrm{F}}\) that may have full rank, whereas the true fundamental matrix
+        has rank 2. The rank-2 matrix closest to \(\tilde{\mathrm{F}}\) in Frobenius norm is found by</p>
+      <div class="eq-block">
+        \[
+        \min_{\mathrm{F}} \|\tilde{\mathrm{F}} - \mathrm{F}\|_F
+        \qquad \text{subject to} \qquad \det(\mathrm{F}) = 0,
+        \]
+      </div>
+      <p>which is again solved by SVD. Writing \(\tilde{\mathrm{F}} = \mathrm{U}_F\Sigma_F\mathrm{V}_F^\top\) with</p>
+      <div class="eq-block">
+        \[
+        \Sigma_F = \begin{bmatrix} \sigma_1 & 0 & 0 \\ 0 & \sigma_2 & 0 \\ 0 & 0 & \sigma_3 \end{bmatrix},
+        \qquad
+        \Sigma_F^{(2)} = \begin{bmatrix} \sigma_1 & 0 & 0 \\ 0 & \sigma_2 & 0 \\ 0 & 0 & 0 \end{bmatrix},
+        \]
+      </div>
+      <p>the Eckart–Young theorem gives the best rank-2 approximation as</p>
+
+      <div class="key-eq">
+        <span class="eq-tag">Rank-2 projection</span>
+        \[
+        \mathrm{F} = \mathrm{U}_F\, \Sigma_F^{(2)}\, \mathrm{V}_F^\top.
+        \]
+      </div>
+
+      <p>Given \(\mathrm{F}\) and known intrinsics \(\mathrm{K}_l, \mathrm{K}_r\), the essential
+        matrix \(\mathrm{E} = \mathrm{K}_l^\top \mathrm{F}\mathrm{K}_r\) can then be decomposed to
+        recover \(\mathrm{R}\) and \(\mathbf{t}\).</p>
+    </section>
+
+    <!-- ============ 6. DECOMPOSING E ============ -->
+    <section id="decomposing">
+      <h2><span class="num">6</span> Decomposing the Essential Matrix</h2>
+      <p>Because \(\mathrm{E} = [\mathbf{t}]_\times\mathrm{R}\) with \([\mathbf{t}]_\times\)
+        skew-symmetric and \(\mathrm{R}\) orthonormal, \(\mathrm{E}\) has a specific singular value
+        structure that lets \(\mathrm{R}\) and \(\mathbf{t}\) be recovered from its SVD,</p>
+      <div class="eq-block">
+        \[
+        \mathrm{E} = \mathrm{U}_E\, \Sigma_E\, \mathrm{V}_E^\top.
+        \]
+      </div>
+      <p>For an <em>ideal</em> essential matrix, computed from exact, noiseless correspondences,</p>
+
+      <div class="key-eq">
+        <!-- <span class="eq-tag">Eq. 27</span> -->
+        \[
+        \Sigma_E = \begin{bmatrix} \sigma & 0 & 0 \\ 0 & \sigma & 0 \\ 0 & 0 & 0 \end{bmatrix}
+        \qquad (\sigma_1 = \sigma_2 = \sigma,\ \sigma_3 = 0).
+        \]
+      </div>
+
+      <h3>Recovering \(\mathrm{R}\) and \(\mathbf{t}\)</h3>
+      <p>Define</p>
+      <div class="eq-block">
+        \[
+        \mathrm{W} = \begin{bmatrix} 0 & -1 & 0 \\ 1 & 0 & 0 \\ 0 & 0 & 1 \end{bmatrix}.
+        \]
+      </div>
+      <p>Then</p>
+      <div class="eq-block">
+        \[
+        \mathrm{R} = \mathrm{U}_E\,\mathrm{W}\,\mathrm{V}_E^\top
+        \quad \text{or} \quad
+        \mathrm{R} = \mathrm{U}_E\,\mathrm{W}^\top\mathrm{V}_E^\top,
+        \qquad
+        \mathbf{t} = \pm\, \mathbf{u}_3,
+        \]
+      </div>
+      <p>where \(\mathbf{u}_3\) is the third column of \(\mathrm{U}_E\). This gives four candidate
+        \((\mathrm{R}, \mathbf{t})\) pairs (each combined with the constraint \(\det(\mathrm{R}) =
+        +1\)). Then cheirality check is done which exactly selects one reconstructed 3D point
+        in front of <em>both</em> cameras (positive depth in both frames).
+      </p>
+
+    </section>
+
+  </article>
+</div>
+
+<footer class="site-footer">
+  <div class="inner">
+    <span>© 2026 Anil Banjade</span>
+    <span><a href="../../index.html">Back to portfolio</a></span>
+  </div>
+</footer>
+
+<script>
+  // Highlight the active section in the sticky TOC as the reader scrolls.
+  (function () {
+    var links = Array.prototype.slice.call(document.querySelectorAll('.toc a'));
+    var sections = links.map(function (a) {
+      return document.querySelector(a.getAttribute('href'));
+    });
+
+    function onScroll() {
+      var pos = window.scrollY + 140;
+      var activeIndex = 0;
+      sections.forEach(function (sec, i) {
+        if (sec && sec.offsetTop <= pos) activeIndex = i;
+      });
+      links.forEach(function (a, i) {
+        a.classList.toggle('active', i === activeIndex);
+      });
+    }
+
+    window.addEventListener('scroll', onScroll, { passive: true });
+    onScroll();
+  })();
+
+  // Rough reading time estimate.
+  (function () {
+    var text = document.querySelector('article').innerText || '';
+    var words = text.trim().split(/\s+/).length;
+    var minutes = Math.max(1, Math.round(words / 200));
+    var el = document.getElementById('readingTime');
+    if (el) el.textContent = '— ' + minutes + ' min read';
+  })();
+</script>
+
+
+
+<script src="/assets/navbar.js"></script>
+</body>
+</html>

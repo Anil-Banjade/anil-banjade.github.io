@@ -11,7 +11,7 @@
       href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700&family=DM+Sans:wght@300;400&display=swap"
       rel="stylesheet"
     />
-
+    <link rel="stylesheet" href="/assets/navbar.css" />
     <script
       type="text/javascript"
       src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"
@@ -22,7 +22,7 @@
   </head>
 
   <body>
-    <nav class="navbar">
+    <!-- <nav class="navbar">
       <div class="nav-inner">
         <a href="#" class="logo">Anil Banjade</a>
 
@@ -42,9 +42,9 @@
           <span></span><span></span><span></span>
         </button>
       </div>
-    </nav>
+    </nav> -->
 
-    <div class="mobile-drawer" id="drawer">
+    <!-- <div class="mobile-drawer" id="drawer">
       <div class="drawer-overlay" id="overlay"></div>
       <div class="drawer-panel">
         <a href="#home">Home</a>
@@ -52,7 +52,9 @@
         <a href="#blog">Blogs</a>
         <a href="#contact">Contact</a>
       </div>
-    </div>
+    </div> -->
+
+    <div id="navbar-placeholder"></div>
 
     <div class="hero" id="home">
       <!-- Left: photo + links -->
@@ -315,13 +317,15 @@
           </div>
         </a>
 
-        <a class="blog-card" href="#">
-          <span class="blog-date">Apr 2025</span>
+        <a class="blog-card" href="blogs/epipolar/epipolar-geometry.html">
+          <span class="blog-date">Aug 2026</span>
           <div>
-            <p class="blog-title">Epipolar and Pn</p>
+            <p class="blog-title">Epipolar Geometry</p>
             <p class="blog-excerpt">
-              What mode collapse, aliasing artifacts, and FID scores taught me
-              about generative model stability.
+              How two cameras looking at the same point in space encode depth — and
+              how that geometric fact is turned into the essential matrix, the
+              fundamental matrix, and a working algorithm for recovering camera pose
+              from correspondences alone.
             </p>
           </div>
           <div
@@ -332,7 +336,7 @@
               gap: 0.5rem;
             "
           >
-            <span class="blog-topic">Generative Models</span>
+            <span class="blog-topic">Computer Vision</span>
             <span class="blog-arrow">→</span>
           </div>
         </a>
@@ -431,6 +435,39 @@
       </div>
     </section>
 
+
+    <script src="/assets/navbar.js"></script>
+<script>
+  window.__setupActiveNav = function () {
+    const navLinks = document.querySelectorAll(".menu a");
+    const sectionIds = ["home", "projects", "blog", "contact"];
+
+    function updateActive() {
+      const scrollY = window.scrollY + 100;
+      let current = "home";
+      const nearBottom =
+        window.scrollY + window.innerHeight >= document.body.scrollHeight - 50;
+
+      if (nearBottom) {
+        current = "contact";
+      } else {
+        sectionIds.forEach((id) => {
+          const el = document.getElementById(id);
+          if (el && el.offsetTop <= scrollY) current = id;
+        });
+      }
+
+      navLinks.forEach((a) => {
+        a.classList.toggle("active", a.getAttribute("href").endsWith("#" + current));
+      });
+    }
+
+    window.addEventListener("scroll", updateActive, { passive: true });
+    updateActive();
+  };
+</script>
+
+
     <script>
       function sendEmail() {
         const EMAILJS_SERVICE_ID = "banjade_anil_17"; // e.g. "service_abc123"
@@ -496,61 +533,61 @@
         el.style.opacity = "1";
       }
 
-      const hamburger = document.getElementById("hamburger");
-      const drawer = document.getElementById("drawer");
-      const overlay = document.getElementById("overlay");
+      // const hamburger = document.getElementById("hamburger");
+      // const drawer = document.getElementById("drawer");
+      // const overlay = document.getElementById("overlay");
 
-      function openMenu() {
-        drawer.classList.add("open");
-        hamburger.setAttribute("aria-expanded", "true");
-        document.body.style.overflow = "hidden";
-      }
-      function closeMenu() {
-        drawer.classList.remove("open");
-        hamburger.setAttribute("aria-expanded", "false");
-        document.body.style.overflow = "";
-      }
+      // function openMenu() {
+      //   drawer.classList.add("open");
+      //   hamburger.setAttribute("aria-expanded", "true");
+      //   document.body.style.overflow = "hidden";
+      // }
+      // function closeMenu() {
+      //   drawer.classList.remove("open");
+      //   hamburger.setAttribute("aria-expanded", "false");
+      //   document.body.style.overflow = "";
+      // }
 
-      hamburger.addEventListener("click", () =>
-        drawer.classList.contains("open") ? closeMenu() : openMenu()
-      );
-      overlay.addEventListener("click", closeMenu);
-      document
-        .querySelectorAll(".drawer-panel a")
-        .forEach((l) => l.addEventListener("click", closeMenu));
+      // hamburger.addEventListener("click", () =>
+      //   drawer.classList.contains("open") ? closeMenu() : openMenu()
+      // );
+      // overlay.addEventListener("click", closeMenu);
+      // document
+      //   .querySelectorAll(".drawer-panel a")
+      //   .forEach((l) => l.addEventListener("click", closeMenu));
 
-      // Active nav on scroll
-      const navLinks = document.querySelectorAll(".menu a");
-      const sectionIds = ["home", "projects", "blog", "contact"];
+      // // Active nav on scroll
+      // const navLinks = document.querySelectorAll(".menu a");
+      // const sectionIds = ["home", "projects", "blog", "contact"];
 
-      function updateActive() {
-        const scrollY = window.scrollY + 100;
-        let current = "home";
+      // function updateActive() {
+      //   const scrollY = window.scrollY + 100;
+      //   let current = "home";
 
-        // If scrolled near the bottom of the page, force last section active
-        const nearBottom =
-          window.scrollY + window.innerHeight >=
-          document.body.scrollHeight - 50;
+      //   // If scrolled near the bottom of the page, force last section active
+      //   const nearBottom =
+      //     window.scrollY + window.innerHeight >=
+      //     document.body.scrollHeight - 50;
 
-        if (nearBottom) {
-          current = "contact";
-        } else {
-          sectionIds.forEach((id) => {
-            const el = document.getElementById(id);
-            if (el && el.offsetTop <= scrollY) current = id;
-          });
-        }
+      //   if (nearBottom) {
+      //     current = "contact";
+      //   } else {
+      //     sectionIds.forEach((id) => {
+      //       const el = document.getElementById(id);
+      //       if (el && el.offsetTop <= scrollY) current = id;
+      //     });
+      //   }
 
-        navLinks.forEach((a) => {
-          a.classList.toggle(
-            "active",
-            a.getAttribute("href") === "#" + current
-          );
-        });
-      }
+      //   navLinks.forEach((a) => {
+      //     a.classList.toggle(
+      //       "active",
+      //       a.getAttribute("href") === "#" + current
+      //     );
+      //   });
+      // }
 
-      window.addEventListener("scroll", updateActive, { passive: true });
-      updateActive();
+      // window.addEventListener("scroll", updateActive, { passive: true });
+      // updateActive();
     </script>
   </body>
 </html>

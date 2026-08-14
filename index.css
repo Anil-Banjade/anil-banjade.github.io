@@ -28,7 +28,7 @@ body {
   min-height: 200vh;
 }
 
-.navbar {
+/* .navbar {
   position: fixed;
   top: 0;
   left: 0;
@@ -43,10 +43,10 @@ body {
   height: 100%;
   display: flex;
   align-items: stretch;
-}
+} */
 
 /* Name */
-.logo {
+/* .logo {
   font-family: "DM Sans", sans-serif;
   font-weight: 400;
   font-size: 1rem;
@@ -60,7 +60,7 @@ body {
   flex-shrink: 0;
 }
 
-/* Menu — left aligned, sits right after the name */
+/* Menu — left aligned, sits right after the name 
 .menu {
   list-style: none;
   display: flex;
@@ -117,10 +117,10 @@ body {
 }
 .menu a.active::after {
   transform: scaleX(1);
-}
+} */
 
 /* Hamburger */
-.hamburger {
+/* .hamburger {
   display: none;
   flex-direction: column;
   justify-content: center;
@@ -163,10 +163,10 @@ body {
 .hamburger[aria-expanded="true"] span:nth-child(3) {
   transform: translateY(-6.5px) rotate(-45deg);
   width: 100%;
-}
+} */
 
 /* Mobile drawer */
-.mobile-drawer {
+/* .mobile-drawer {
   display: none;
   position: fixed;
   inset: 0;
@@ -229,9 +229,9 @@ body {
 .drawer-panel a:hover::after {
   opacity: 1;
   transform: translateX(0);
-}
+} */
 
-@media (max-width: 640px) {
+/* @media (max-width: 640px) {
   .menu {
     display: none;
   }
@@ -241,7 +241,7 @@ body {
   .hamburger {
     display: flex;
   }
-}
+} */
 
 /* ── HERO ── */
 .hero {

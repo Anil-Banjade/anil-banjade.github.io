@@ -1,0 +1,156 @@
+.navbar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 1000;
+    height: var(--nav-h, 70px);
+    background: var(--nav-bg);
+    border-bottom: 1px solid var(--border);
+  }
+
+  .nav-inner,
+.logo,
+.menu a {
+  line-height: 1;
+}
+  
+  .nav-inner {
+    height: 100%;
+    display: flex;
+    align-items: stretch;
+  }
+  
+  .logo {
+    font-family: "DM Sans", sans-serif;
+    font-weight: 400;
+    font-size: 1rem;
+    letter-spacing: 0.02em;
+    color: var(--text);
+    text-decoration: none;
+    display: flex;
+    align-items: center;
+    padding: 0 2rem;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+  
+  .menu {
+    list-style: none;
+    display: flex;
+    align-items: stretch;
+    border-left: 1px solid var(--border);
+  }
+  
+  .menu li { display: flex; align-items: stretch; }
+  .menu li + li { border-left: 1px solid var(--border); }
+  
+  .menu a {
+    font-family: "DM Sans", sans-serif;
+    font-weight: 300;
+    font-size: 0.82rem;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    text-decoration: none;
+    color: var(--muted);
+    display: flex;
+    align-items: center;
+    padding: 0 4rem;
+    position: relative;
+    white-space: nowrap;
+    transition: color 0.2s;
+  }
+  
+  .menu a::after {
+    content: "";
+    position: absolute;
+    bottom: 0;
+    left: 2.25rem;
+    right: 2.25rem;
+    height: 2px;
+    background: var(--active-accent, var(--accent, #8b2020));
+    transform: scaleX(0);
+    transform-origin: left;
+    transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  
+  .menu a:hover { color: var(--text); }
+  .menu a:hover::after { transform: scaleX(1); }
+  .menu a.active { color: var(--text); }
+  .menu a.active::after { transform: scaleX(1); }
+  
+  .hamburger {
+    display: none;
+    flex-direction: column;
+    justify-content: center;
+    gap: 5px;
+    width: 36px;
+    height: 36px;
+    cursor: pointer;
+    background: none;
+    border: none;
+    padding: 4px;
+    margin-right: 1rem;
+    margin-left: auto;
+  }
+  .hamburger span {
+    display: block;
+    height: 1.5px;
+    background: var(--text);
+    border-radius: 2px;
+    transform-origin: center;
+    transition: transform 0.35s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.25s, width 0.3s;
+  }
+  .hamburger span:nth-child(1) { width: 100%; }
+  .hamburger span:nth-child(2) { width: 70%; }
+  .hamburger span:nth-child(3) { width: 100%; }
+  .hamburger[aria-expanded="true"] span:nth-child(1) { transform: translateY(6.5px) rotate(45deg); width: 100%; }
+  .hamburger[aria-expanded="true"] span:nth-child(2) { opacity: 0; transform: scaleX(0); }
+  .hamburger[aria-expanded="true"] span:nth-child(3) { transform: translateY(-6.5px) rotate(-45deg); width: 100%; }
+  
+  .mobile-drawer { display: none; position: fixed; inset: 0; z-index: 900; }
+  .drawer-overlay { position: absolute; inset: 0; background: rgba(0, 0, 0, 0.6); opacity: 0; transition: opacity 0.35s; }
+  .drawer-panel {
+    position: absolute;
+    top: 0; right: 0; bottom: 0;
+    width: min(75vw, 320px);
+    background: #111;
+    border-left: 1px solid var(--border);
+    padding: calc(var(--nav-h, 70px) + 2rem) 2rem 2rem;
+    transform: translateX(100%);
+    transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+  }
+  .mobile-drawer.open { display: block; }
+  .mobile-drawer.open .drawer-overlay { opacity: 1; }
+  .mobile-drawer.open .drawer-panel { transform: translateX(0); }
+  .drawer-panel a {
+    font-family: "Syne", sans-serif;
+    font-size: 1.3rem;
+    font-weight: 600;
+    color: var(--muted);
+    text-decoration: none;
+    padding: 0.65rem 0;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    transition: color 0.2s;
+  }
+  .drawer-panel a::after {
+    content: "→";
+    font-size: 1rem;
+    opacity: 0;
+    transform: translateX(-8px);
+    transition: opacity 0.2s, transform 0.2s;
+  }
+  .drawer-panel a:hover { color: var(--text); }
+  .drawer-panel a:hover::after { opacity: 1; transform: translateX(0); }
+  
+  @media (max-width: 640px) {
+    .menu { display: none; }
+    .navbar { height: 50px; }
+    .hamburger { display: flex; }
+  }

@@ -1,0 +1,486 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Epipolar Geometry — interactive 3D figure</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,wght@0,400;0,500;0,600;1,500;1,600&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+
+<style>
+  :root{
+    --paper:#ffffff;
+    --ink:#2c2a26;
+    --ink-soft:#68635a;
+    --line:#e4dfd2;
+
+    --muted-blue:#7a90a4;
+    --muted-teal:#759599;
+    --navy-plane:#4a5c73;
+    
+    --muted-crimson:#c25953;
+    --epipolar-line:#2e7d6b; 
+    --camera-axis:#606c7d;  
+  }
+
+  .epi-figure{
+    font-family:'IBM Plex Sans', sans-serif;
+    color:var(--ink);
+    width: 100%;
+    max-width: 100%; 
+    margin: 1rem auto;
+  }
+  .epi-figure *{ box-sizing:border-box; }
+
+  .epi-card{
+    border:1px solid var(--line);
+    border-radius:12px;
+    background:var(--paper);
+    padding:8px 8px 10px;
+    box-shadow:0 1px 3px rgba(0,0,0,0.03);
+  }
+
+  .epi-title{
+    text-align:center;
+    font-family:'IBM Plex Sans', sans-serif;
+    font-weight:600;
+    font-size:0.92rem;
+    color:var(--ink-soft);
+    letter-spacing:0.02em;
+    padding:2px 0 6px;
+    margin-bottom:6px;
+    border-bottom:1px solid var(--line);
+  }
+
+  .epi-viewport-wrap{
+    position:relative;
+    width:100%;
+    aspect-ratio: 16 / 9.5; /* Significantly taller viewing area */
+    border-radius:8px;
+    overflow:hidden;
+    background: radial-gradient(120% 140% at 50% 30%, #ffffff 0%, #e6e4df 70%);
+    border:1px solid var(--line);
+  }
+
+  .epi-viewport-wrap canvas{ display:block; }
+
+  .epi-labels-layer{
+    position:absolute; inset:0;
+    pointer-events:none;
+  }
+
+  .epi-label{
+    font-family:'IBM Plex Mono', monospace;
+    font-size:13px;
+    font-weight:600;
+    letter-spacing:0.01em;
+    white-space:nowrap;
+    transform:translate(-50%,-50%);
+    text-shadow: 0 1px 3px rgba(255,255,255,0.9), 0 0 8px rgba(255,255,255,1);
+    color: var(--ink);
+  }
+  .epi-label.ray     { color:var(--muted-blue); font-family:'Newsreader', serif; font-style:italic; font-weight:600; font-size:15px; }
+  .epi-label.base    { color:var(--muted-teal); font-family:'Newsreader', serif; font-style:italic; font-weight:600; font-size:14px; }
+  .epi-label.proj    { color:var(--epipolar-line); }
+  .epi-label.epi     { color:var(--epipolar-line); }
+  .epi-label.plane   { color:var(--navy-plane); font-family:'Newsreader', serif; font-style:italic; font-weight:500; font-size:15px;}
+  .epi-label.normal  { color:var(--muted-crimson); font-family:'Newsreader', serif; font-style:italic; font-weight:600; font-size:15px; }
+  
+  .epi-label.axis-x, .epi-label.axis-y, .epi-label.axis-z  { color:var(--camera-axis); font-size:11px; }
+
+  .epi-loading{
+    position:absolute; inset:0;
+    display:flex; align-items:center; justify-content:center;
+    color:var(--ink-soft); font-size:13px; letter-spacing:0.02em;
+    font-family:'IBM Plex Sans', sans-serif;
+  }
+
+  .epi-controls{
+    position:absolute;
+    left:10px; bottom:10px;
+    display:flex; gap:6px;
+    pointer-events:auto;
+    z-index:5;
+  }
+  .epi-btn{
+    font-family:'IBM Plex Sans', sans-serif;
+    font-size:11px;
+    font-weight:500;
+    color:var(--ink);
+    background:rgba(255,255,255,0.7);
+    border:1px solid rgba(0,0,0,0.12);
+    padding:4px 8px;
+    border-radius:999px;
+    cursor:pointer;
+    backdrop-filter:blur(4px);
+    transition:background 0.15s ease, border-color 0.15s ease;
+  }
+  .epi-btn:hover{ background:rgba(255,255,255,0.95); border-color:rgba(0,0,0,0.25); }
+
+  .epi-hint{
+    position:absolute;
+    right:10px; bottom:8px;
+    font-family:'IBM Plex Sans', sans-serif;
+    font-size:10px;
+    color:var(--ink-soft);
+    letter-spacing:0.02em;
+    pointer-events:none;
+  }
+
+  .epi-legend{
+    display:flex;
+    flex-wrap:wrap;
+    justify-content:center;
+    gap:6px 16px;
+    padding:8px 4px 2px;
+    border-top:1px solid var(--line);
+    margin-top:8px;
+    font-family:'IBM Plex Sans', sans-serif;
+    font-size:11.5px;
+    color:var(--ink-soft);
+  }
+  .epi-legend .item{ display:flex; align-items:center; gap:5px; }
+  .epi-legend .swatch{ width:10px; height:10px; border-radius:3px; flex:none; border:1px solid rgba(0,0,0,0.1); }
+  .epi-legend code{ font-family:'IBM Plex Mono', monospace; font-size:11px; color:var(--ink); }
+
+  @media (max-width:520px){
+    .epi-label{ font-size:11px; }
+    .epi-hint{ display:none; }
+    .epi-title{ font-size:0.85rem; }
+  }
+</style>
+</head>
+<body>
+
+<figure class="epi-figure">
+  <div class="epi-card">
+    <div class="epi-title">Epipolar Geometry</div>
+
+    <div class="epi-viewport-wrap" id="epiViewport">
+      <div class="epi-loading" id="epiLoading">setting up the scene…</div>
+      <div class="epi-labels-layer" id="epiLabelsLayer"></div>
+      <div class="epi-controls">
+        <button class="epi-btn" id="epiResetBtn" type="button">Reset view</button>
+      </div>
+      <div class="epi-hint">hover to rotate · drag to orbit · scroll to zoom</div>
+    </div>
+
+    <!-- <div class="epi-legend">
+      <span class="item"><span class="swatch" style="background:#555"></span><code>O_l, O_r, P</code> — centers &amp; point</span>
+      <span class="item"><span class="swatch" style="background:var(--muted-blue)"></span><code>X_l, X_r</code> — rays</span>
+      <span class="item"><span class="swatch" style="background:var(--muted-teal)"></span><code>t, R</code> — baseline</span>
+      <span class="item"><span class="swatch" style="background:var(--muted-crimson)"></span><code>n</code> — normal</span>
+      <span class="item"><span class="swatch" style="background:var(--epipolar-line)"></span><code>x, e</code> &amp; epipolar lines</span>
+      <span class="item"><span class="swatch" style="background:var(--navy-plane); opacity:.4"></span>epipolar plane</span>
+    </div> -->
+  </div>
+</figure>
+
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+    "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+  }
+}
+</script>
+
+<script type="module">
+import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import { CSS2DRenderer, CSS2DObject } from 'three/addons/renderers/CSS2DRenderer.js';
+import { LineGeometry } from 'three/addons/lines/LineGeometry.js';
+import { LineMaterial } from 'three/addons/lines/LineMaterial.js';
+import { Line2 } from 'three/addons/lines/Line2.js';
+
+const viewport = document.getElementById('epiViewport');
+const labelsLayer = document.getElementById('epiLabelsLayer');
+const loadingEl = document.getElementById('epiLoading');
+
+// ---------- renderers ----------
+const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+viewport.insertBefore(renderer.domElement, labelsLayer);
+
+const labelRenderer = new CSS2DRenderer();
+labelRenderer.domElement.style.position = 'absolute';
+labelRenderer.domElement.style.top = '0';
+labelRenderer.domElement.style.left = '0';
+labelRenderer.domElement.style.pointerEvents = 'none';
+viewport.appendChild(labelRenderer.domElement);
+
+const scene = new THREE.Scene();
+const camera = new THREE.PerspectiveCamera(38, 1, 0.1, 100);
+
+const homeCamPos = new THREE.Vector3(0.5, 6.2, 8.5);
+const homeTarget = new THREE.Vector3(0.0, 1.0, -0.8);
+camera.position.copy(homeCamPos);
+
+const controls = new OrbitControls(camera, labelRenderer.domElement);
+controls.domElement.style.pointerEvents = 'auto';
+controls.enableDamping = true;
+controls.dampingFactor = 0.08;
+controls.minDistance = 5;
+controls.maxDistance = 25;
+controls.target.copy(homeTarget);
+controls.autoRotate = false;
+controls.autoRotateSpeed = 1.1;
+controls.update();
+
+let isHovering = false;
+let isInteracting = false;
+
+viewport.addEventListener('mouseenter', () => { isHovering = true; });
+viewport.addEventListener('mouseleave', () => { isHovering = false; isInteracting = false; });
+controls.addEventListener('start', () => { isInteracting = true; });
+
+function resize(){
+  const w = viewport.clientWidth, h = viewport.clientHeight;
+  if (w === 0 || h === 0) return;
+  renderer.setSize(w, h);
+  labelRenderer.setSize(w, h);
+  camera.aspect = w / h;
+  camera.updateProjectionMatrix();
+  lineMaterials.forEach(m => m.resolution.set(w, h));
+}
+const lineMaterials = [];
+new ResizeObserver(resize).observe(viewport);
+
+// ---------- geometry data ----------
+const O_l = new THREE.Vector3(-4.3, 0, 0);
+const O_r = new THREE.Vector3( 4.3, 0, 0);
+const P   = new THREE.Vector3( 0.0, 1.5, -4.0);
+
+const worldUp = new THREE.Vector3(0,1,0);
+
+function lineOnPlaneIntersection(A, B, planeCenter, normal){
+  const dir = new THREE.Vector3().subVectors(B, A);
+  const denom = dir.dot(normal);
+  const t = new THREE.Vector3().subVectors(planeCenter, A).dot(normal) / denom;
+  return A.clone().add(dir.multiplyScalar(t));
+}
+
+function buildImagePlane(camPos, planeDist){
+  const targetFlat = P.clone();
+  targetFlat.y = camPos.y; 
+  const normal = targetFlat.sub(camPos).normalize();
+
+  let right = new THREE.Vector3().crossVectors(worldUp, normal);
+  if (right.lengthSq() < 1e-6) right.set(1, 0, 0);
+  right.normalize();
+  const up = new THREE.Vector3().crossVectors(normal, right).normalize();
+
+  const center = camPos.clone().add(normal.clone().multiplyScalar(planeDist));
+
+  const rayDir = P.clone().sub(camPos).normalize();
+  const denom = rayDir.dot(normal);
+  const t = planeDist / denom;
+  const imgPt = camPos.clone().add(rayDir.multiplyScalar(t)); 
+
+  const epipole = lineOnPlaneIntersection(O_l, O_r, center, normal);
+
+  const toLocal = (pt) => {
+    const v = pt.clone().sub(center);
+    return { u: v.dot(right), v: v.dot(up) };
+  };
+  const toLocalImg = toLocal(imgPt), le = toLocal(epipole);
+
+  const centerU = (le.u + toLocalImg.u) / 2;
+  const centerV = (le.v + toLocalImg.v) / 2;
+  const spanU = Math.max(Math.abs(le.u - toLocalImg.u) / 2, 0.75) + 0.65;
+  const spanV = Math.max(Math.abs(le.v - toLocalImg.v) / 2, 0.75) + 0.65;
+
+  const uMin = centerU - spanU, uMax = centerU + spanU;
+  const vMin = centerV - spanV, vMax = centerV + spanV;
+
+  const corner = (u, v) => center.clone().add(right.clone().multiplyScalar(u)).add(up.clone().multiplyScalar(v));
+  const corners = [ corner(uMin,vMin), corner(uMax,vMin), corner(uMax,vMax), corner(uMin,vMax) ];
+
+  return { center, right, up, normal, imgPt, epipole, corners };
+}
+
+const planeL = buildImagePlane(O_l, 2.3);
+const planeR = buildImagePlane(O_r, 2.3);
+
+// ---------- scene group ----------
+const world = new THREE.Group();
+scene.add(world);
+
+function solidLine(points, color, width){
+  const geo = new LineGeometry();
+  geo.setPositions(points.flatMap(p => [p.x, p.y, p.z]));
+  const mat = new LineMaterial({ color, linewidth: width, transparent: true, opacity: 0.95 });
+  mat.resolution.set(viewport.clientWidth || 800, viewport.clientHeight || 600);
+  lineMaterials.push(mat);
+  const line = new Line2(geo, mat);
+  line.computeLineDistances();
+  world.add(line);
+  return line;
+}
+
+function dashedLine(points, color, width, dash=0.14, gap=0.09){
+  const geo = new LineGeometry();
+  geo.setPositions(points.flatMap(p => [p.x, p.y, p.z]));
+  const mat = new LineMaterial({ color, linewidth: width, transparent:true, opacity:0.85, dashed:true, dashSize:dash, gapSize:gap });
+  mat.resolution.set(viewport.clientWidth || 800, viewport.clientHeight || 600);
+  lineMaterials.push(mat);
+  const line = new Line2(geo, mat);
+  line.computeLineDistances();
+  world.add(line);
+  return line;
+}
+
+function dot(pos, color, size=0.11){
+  const geo = new THREE.SphereGeometry(size, 20, 20);
+  const mat = new THREE.MeshBasicMaterial({ color });
+  const m = new THREE.Mesh(geo, mat);
+  m.position.copy(pos);
+  world.add(m);
+  return m;
+}
+
+function labelAt(pos, html, cls, offset={x:0,y:0}){
+  const el = document.createElement('div');
+  el.className = 'epi-label ' + cls;
+  el.innerHTML = html;
+  el.style.marginLeft = (offset.x||0) + 'px';
+  el.style.marginTop = (offset.y||0) + 'px';
+  const obj = new CSS2DObject(el);
+  obj.position.copy(pos);
+  world.add(obj);
+  return obj;
+}
+
+function axisArrow(origin, dir, length, color){
+  const arrow = new THREE.ArrowHelper(dir.clone().normalize(), origin, length, color, length*0.28, length*0.16);
+  world.add(arrow);
+}
+
+// Colors
+const colorRay = 0x7a90a4;
+const colorBase = 0x759599;
+const colorPoint = 0x333333;
+const colorHighlight = 0x2e7d6b; 
+const colorPlaneFill = 0x4a5c73;
+const colorImagePlane = 0x8aa1b8;
+const colorNormal = 0xc25953;   
+const colorCameraAxis = 0x606c7d; 
+
+// --- baseline vector t, R (O_l to O_r) ---
+solidLine([O_l, O_r], colorBase, 2.2);
+const baselineMid = O_l.clone().add(O_r).multiplyScalar(0.5);
+labelAt(baselineMid.clone().add(new THREE.Vector3(0, -0.4, 0)), '<b>t, R</b>', 'base');
+
+// --- rays X_l, X_r ---
+solidLine([O_l, P], colorRay, 2.4);
+solidLine([O_r, P], colorRay, 2.4);
+const rayMidL = O_l.clone().lerp(P, 0.82);
+labelAt(rayMidL.clone().add(new THREE.Vector3(-0.35, 0.35, 0)), '<b>X_l</b>', 'ray');
+const rayMidR = O_r.clone().lerp(P, 0.82);
+labelAt(rayMidR.clone().add(new THREE.Vector3(0.35, 0.35, 0)), '<b>X_r</b>', 'ray');
+
+// --- epipolar plane ---
+const triGeo = new THREE.BufferGeometry();
+triGeo.setAttribute('position', new THREE.Float32BufferAttribute(
+  [O_l.x,O_l.y,O_l.z, O_r.x,O_r.y,O_r.z, P.x,P.y,P.z], 3));
+triGeo.computeVertexNormals();
+const triMat = new THREE.MeshBasicMaterial({ color: colorPlaneFill, transparent:true, opacity:0.25, side: THREE.DoubleSide, depthWrite:false });
+const triMesh = new THREE.Mesh(triGeo, triMat);
+world.add(triMesh);
+const planeCentroid = O_l.clone().add(O_r).add(P).multiplyScalar(1/3);
+labelAt(planeCentroid.clone().add(new THREE.Vector3(0,0.3,0)), 'Epipolar Plane', 'plane');
+
+// --- normal vector n = t × X_l originating from O_l ---
+const tVec = new THREE.Vector3().subVectors(O_r, O_l);
+const xlVec = new THREE.Vector3().subVectors(P, O_l);
+const nVec = new THREE.Vector3().crossVectors(tVec, xlVec).normalize();
+axisArrow(O_l, nVec, 1.8, colorNormal);
+labelAt(O_l.clone().add(nVec.clone().multiplyScalar(2.0)), '<b>n = t × X_l</b>', 'normal');
+
+// --- image planes ---
+const planeGroup = new THREE.Group();
+world.add(planeGroup);
+
+function addImagePlane(pl, labelSuffix){
+  const [c0,c1,c2,c3] = pl.corners;
+
+  const fillGeo = new THREE.BufferGeometry();
+  const verts = [c0,c1,c2, c0,c2,c3].flatMap(p => [p.x,p.y,p.z]);
+  fillGeo.setAttribute('position', new THREE.Float32BufferAttribute(verts, 3));
+  fillGeo.computeVertexNormals();
+  const fillMat = new THREE.MeshBasicMaterial({ color: colorImagePlane, transparent:true, opacity:0.18, side: THREE.DoubleSide, depthWrite:false });
+  const mesh = new THREE.Mesh(fillGeo, fillMat);
+  planeGroup.add(mesh);
+
+  solidLine([c0,c1,c2,c3,c0], 0x99aab5, 1.5);
+
+  const dir = pl.imgPt.clone().sub(pl.epipole).normalize();
+  const extend = Math.max(pl.imgPt.distanceTo(pl.epipole) * 0.25, 0.25);
+  const farPt = pl.imgPt.clone().add(dir.multiplyScalar(extend));
+  dashedLine([pl.epipole, farPt], colorHighlight, 1.8, 0.15, 0.1);
+
+  dot(pl.imgPt, colorHighlight, 0.11);
+  dot(pl.epipole, colorHighlight, 0.10);
+
+  labelAt(pl.imgPt, '<b>x_' + labelSuffix + '</b>', 'proj', {y:-15});
+  labelAt(pl.epipole, '<b>e_' + labelSuffix + '</b>', 'epi', {y:14});
+
+  return mesh;
+}
+addImagePlane(planeL, 'l');
+addImagePlane(planeR, 'r');
+
+// --- camera triads ---
+function cameraTriad(O, pl, mirrored, suffix){
+  const xDir = mirrored ? pl.right.clone().negate() : pl.right.clone();
+  const zDir = pl.normal.clone().negate();
+  axisArrow(O, xDir, 0.85, colorCameraAxis);
+  axisArrow(O, pl.up, 0.85, colorCameraAxis);
+  axisArrow(O, zDir, 0.85, colorCameraAxis);
+  labelAt(O.clone().add(xDir.clone().multiplyScalar(1.0)), 'x̂_' + suffix, 'axis-x');
+  labelAt(O.clone().add(pl.up.clone().multiplyScalar(1.0)), 'ŷ_' + suffix, 'axis-y');
+  labelAt(O.clone().add(zDir.clone().multiplyScalar(1.0)), 'ẑ_' + suffix, 'axis-z');
+}
+cameraTriad(O_l, planeL, false, 'l');
+cameraTriad(O_r, planeR, true, 'r');
+
+// --- camera centers & scene point ---
+dot(O_l, colorPoint, 0.15);
+dot(O_r, colorPoint, 0.15);
+dot(P,   colorPoint, 0.16);
+labelAt(O_l, '<b>O_l</b>', 'pt', {y:22});
+labelAt(O_r, '<b>O_r</b>', 'pt', {y:22});
+labelAt(P,   '<b>P</b>', 'pt', {y:-20});
+
+// ---------- interaction: buttons ----------
+document.getElementById('epiResetBtn').addEventListener('click', () => {
+  camera.position.copy(homeCamPos);
+  controls.target.copy(homeTarget);
+  controls.update();
+});
+
+// ---------- render loop ----------
+function animate(){
+  requestAnimationFrame(animate);
+  
+  if (isHovering && !isInteracting) {
+    controls.autoRotate = true;
+  } else {
+    controls.autoRotate = false;
+  }
+
+  controls.update();
+  renderer.render(scene, camera);
+  labelRenderer.render(scene, camera);
+}
+
+resize();
+loadingEl.style.display = 'none';
+animate();
+window.addEventListener('resize', resize);
+</script>
+
+</body>
+</html>

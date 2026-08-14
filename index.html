@@ -140,6 +140,38 @@
       </main>
     </div>
 
+
+     <!-- BLOG SECTION -->
+     <section class="blog-section" id="blog">
+      <div class="blog-section-header">
+        <p class="section-heading" style="margin-bottom: 0">Blogs</p>
+      </div>
+
+      <div class="blog-list">
+        
+        <a class="blog-card" href="blogs/epipolar/epipolar-geometry.html">
+          <div class="blog-thumb">
+            <img
+              src="assets/blog-epipolar-thumb.jpg"
+              alt="3D diagram of epipolar geometry showing two camera frustums and epipolar lines"
+              loading="lazy"
+            />
+          </div>
+          <div class="blog-content">
+            <p class="blog-title">Epipolar Geometry</p>
+            <p class="blog-excerpt">
+              Epipolar geometry reduces feature matching from a 2D search to a 1D
+              search by looking along an epipolar line in the second image for the
+              corresponding point. It also recovers the relative pose (R, t) between
+              two cameras.
+            </p>
+          </div>
+          <span class="blog-arrow">→</span>
+        </a>
+      </div>
+    </section>
+
+
     <!-- PROJECTS SECTION -->
     <section class="projects-section" id="projects">
       <p class="section-heading">Projects</p>
@@ -287,62 +319,7 @@
   </div>
 </section> -->
 
-    <!-- BLOG SECTION -->
-    <section class="blog-section" id="blog">
-      <div class="blog-section-header">
-        <p class="section-heading" style="margin-bottom: 0">Blogs</p>
-      </div>
-
-      <div class="blog-list">
-        <a class="blog-card" href="#">
-          <span class="blog-date">Jun 2025</span>
-          <div>
-            <p class="blog-title">Depth-supervised NeRF-SLAM pipeline</p>
-            <p class="blog-excerpt">
-              A walkthrough of combining classical geometric SLAM with neural
-              rendering for photorealistic 3D reconstruction from monocular
-              video.
-            </p>
-          </div>
-          <div
-            style="
-              display: flex;
-              flex-direction: column;
-              align-items: flex-end;
-              gap: 0.5rem;
-            "
-          >
-            <span class="blog-topic">Computer Vision</span>
-            <span class="blog-arrow">→</span>
-          </div>
-        </a>
-
-        <a class="blog-card" href="blogs/epipolar/epipolar-geometry.html">
-          <span class="blog-date">Aug 2026</span>
-          <div>
-            <p class="blog-title">Epipolar Geometry</p>
-            <p class="blog-excerpt">
-              How two cameras looking at the same point in space encode depth — and
-              how that geometric fact is turned into the essential matrix, the
-              fundamental matrix, and a working algorithm for recovering camera pose
-              from correspondences alone.
-            </p>
-          </div>
-          <div
-            style="
-              display: flex;
-              flex-direction: column;
-              align-items: flex-end;
-              gap: 0.5rem;
-            "
-          >
-            <span class="blog-topic">Computer Vision</span>
-            <span class="blog-arrow">→</span>
-          </div>
-        </a>
-      </div>
-    </section>
-
+   
     <!-- CONTACT SECTION -->
     <section class="contact-section" id="contact">
       <p class="section-heading" style="margin-bottom: 3rem">Contact</p>

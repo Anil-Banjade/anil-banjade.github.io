@@ -61,8 +61,7 @@
       <li><a href="#introduction">Introduction</a></li>
       <li><a href="#notation">Notation</a></li>
       <li><a href="#pinhole">The Pinhole Camera Model</a></li>
-      <li><a href="#terminology">Two-View Geometry: Terminology</a></li>
-      <li><a href="#constraint">The Epipolar Constraint</a></li>
+      <li><a href="#constraint">The Epipolar Constraint & Fundamental Matrix</a></li>
       <li><a href="#decomposing">Decomposing the Essential Matrix</a></li>
     </ol>
   </nav>
@@ -75,8 +74,7 @@
         <li><a href="#introduction">Introduction</a></li>
         <li><a href="#notation">Notation</a></li>
         <li><a href="#pinhole">The Pinhole Camera Model</a></li>
-        <li><a href="#terminology">Two-View Geometry: Terminology</a></li>
-        <li><a href="#constraint">The Epipolar Constraint</a></li>
+        <li><a href="#constraint">The Epipolar Constraint & Fundamental Matrix</a></li>
         <li><a href="#decomposing">Decomposing the Essential Matrix</a></li>
       </ol>
     </details>
@@ -313,10 +311,18 @@
   </section>
 
 
-    <section id="terminology">
-      <h2><span class="num">4</span> Two-View Geometry: Terminology</h2>
+   
+
+   
+    <section id="constraint">
+      <h2><span class="num">4</span> The Epipolar Constraint</h2>
+
       <p>Let \(O_l, O_r\) be the optical centers of the left and right cameras, and \(P\) a 3D scene
-        point observed by both.</p>
+        point observed by both the cameras.</p>
+        <figure class="fig fig-interactive">
+          <iframe src="figure_final.html" title="Interactive epipolar geometry figure" loading="lazy"></iframe>
+          <figcaption><span class="fig-num">Fig. 2</span>Epipolar Geometry setup to determine relative pose between cameras.</figcaption>
+        </figure>
       <ul>
         <li><strong>Baseline</strong> — the segment \(O_lO_r\) joining the two centers.</li>
         <li><strong>Epipolar plane</strong> — the plane through \(P, O_l, O_r\). It changes with
@@ -329,11 +335,8 @@
           plane. Given \(\mathbf{x}_l\), the corresponding point \(\mathbf{x}_r\) is constrained to
           lie on the epipolar line that is the image of the ray \(O_lP\)</li>
       </ul>
-    </section>
 
-   
-    <section id="constraint">
-      <h2><span class="num">5</span> The Epipolar Constraint</h2>
+
       <p>The epipolar constraint is derived algebraically using Coplanarity of \(O_l, O_r, P\). Two vectors lying in the epipolar plane are the baseline \(\mathbf{t}\)
         and the ray to \(P\), \(\mathbf{X}_l\), so the plane's normal is</p>
       <div class="eq-block">
@@ -342,17 +345,14 @@
         \]
       </div>
 
-      <figure class="fig fig-interactive">
-        <iframe src="figure_final.html" title="Interactive epipolar geometry figure" loading="lazy"></iframe>
-        <figcaption><span class="fig-num">Fig. 2</span>Epipolar Geometry setup to determine relative pose between cameras.</figcaption>
-      </figure>
+      
 
       <p>The relative pose between the two cameras is the rotation \(\mathrm{R}\) and translation
         \(\mathbf{t}\) mapping right-camera coordinates into the left camera's frame (
         world frame = left-camera frame,  as optical center of left camera frame is considered to be origin of world frame):</p>
       <div class="eq-block">
         \[
-        \mathbf{X}_l = \mathrm{R}\, \mathbf{X}_r + \mathbf{t}. \tag{extrinsic}
+        \mathbf{X}_l = \mathrm{R}\, \mathbf{X}_r + \mathbf{t}.
         \]
       </div>
       <p>(Setting \(\mathbf{X}_r = \mathbf{0}\), the right camera's center, shows that
@@ -428,7 +428,7 @@
           \(\mathrm{R}\) and \(\mathbf{t}\).</p>
 
 
-      <h3>5.1 &nbsp;Pixel coordinates: the fundamental matrix</h3>
+      <h3>4.1 &nbsp;Fundamental matrix</h3>
       <p>Substituting \(\mathbf{X}_l = Z_l\mathrm{K}_l^{-1}\mathbf{x}_l\) and \(\mathbf{X}_r =
         Z_r\mathrm{K}_r^{-1}\mathbf{x}_r\) into the epipolar constraint,</p>
       <div class="eq-block">
@@ -482,7 +482,7 @@
           geometry).</li>
       </ul>
 
-      <h3>5.2 &nbsp;The Eight-Point Algorithm</h3>
+      <h3>4.2 &nbsp;The Eight-Point Algorithm</h3>
       <p>The eight-point algorithm estimates \(\mathrm{F}\) from correspondences alone, without
         knowing intrinsics or extrinsics. For a correspondence pair</p>
       <div class="eq-block">
@@ -559,7 +559,7 @@
 
     <!-- ============ 6. DECOMPOSING E ============ -->
     <section id="decomposing">
-      <h2><span class="num">6</span> Decomposing the Essential Matrix</h2>
+      <h2><span class="num">5</span> Decomposing the Essential Matrix</h2>
       <p>Because \(\mathrm{E} = [\mathbf{t}]_\times\mathrm{R}\) with \([\mathbf{t}]_\times\)
         skew-symmetric and \(\mathrm{R}\) orthonormal, \(\mathrm{E}\) has a specific singular value
         structure that lets \(\mathrm{R}\) and \(\mathbf{t}\) be recovered from its SVD,</p>

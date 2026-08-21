@@ -1,0 +1,341 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Perspective-n-Point (PnP) Pose Estimation — Anil Banjade</title>
+<meta name="description" content="Deriving the P3P constraint from the Law of Cosines, Grunert's quartic solution, absolute-orientation pose recovery via Kabsch/Horn, and how PnP anchors SLAM/SfM tracking to a consistent world frame.">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+
+<link rel="stylesheet" href="/assets/navbar.css" />
+<link rel="stylesheet" href="/assets/blog-article.css">
+
+<script>
+  window.MathJax = {
+    tex: {
+      inlineMath: [['\\(', '\\)']],
+      displayMath: [['\\[', '\\]']],
+      macros: {
+        mat: ["{#1}", 1],
+        vect: ["{\\mathbf{#1}}", 1]
+      }
+    },
+    svg: { fontCache: 'global' }
+  };
+</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/3.2.2/es5/tex-mml-chtml.js" id="MathJax-script" async></script>
+</head>
+<body>
+
+<div id="navbar-placeholder"></div>
+
+<div class="page">
+
+  <div class="masthead">
+    <h1 class="title">Perspective-<em>n</em>-Point (PnP)</h1>
+    <p class="dek">  
+      Perspective-n-Point (PnP) determines the 6-DoF absolute pose of a camera (extrinsic parameters \({R,t }\)), given a set of 3D–2D correspondences. A minimum of 3 points is required to solve for the pose. However, 3 points give four algebraically valid solutions, so a 4th point is required to disambiguate the correct one, and also using more points than 3 points also improves robustness against noise. In mapping systems like SLAM, PnP exploits an existing 3D map to estimate the camera pose when a new frame arrives. 
+    </p>
+    <div class="meta">
+      <span><strong>Anil Banjade</strong></span>
+      <span>2026</span>
+    </div>
+  </div>
+
+  <nav class="toc" aria-label="Table of contents">
+    <p class="toc-label">Contents</p>
+    <ol>
+      <li><a href="#introduction">Introduction</a></li>
+      <li><a href="#p3p">The P3P Constraint</a></li>
+      <li><a href="#pose">Estimating the Pose</a></li>
+      <li><a href="#ambiguity">Resolving the Ambiguity</a></li>
+      
+    </ol>
+  </nav>
+
+  <article>
+
+    <details class="toc-mobile">
+      <summary>Contents</summary>
+      <ol>
+        <li><a href="#introduction">Introduction</a></li>
+        <li><a href="#p3p">The P3P Constraint</a></li>
+        <li><a href="#pose">Estimating the Pose</a></li>
+        <li><a href="#ambiguity">Resolving the Fourfold Ambiguity</a></li>
+        
+      </ol>
+    </details>
+
+    <section id="introduction">
+      <h2><span class="num">1</span> Introduction</h2>
+      <p>In the <a href="/blogs/epipolar/epipolar-geometry.html">previous blog</a> on epipolar geometry, we recovered the relative pose \((\mat{R}, \vect{t})\) between two views from 2D&ndash;2D correspondences using the epipolar constraint, and then triangulated those points to obtain 3D scene coordinates. However, epipolar geometry only gives a pose relative to the previous frame. If a third frame \(f_3\) arrives and we apply epipolar geometry between frames \(f_2\) and \(f_3\), we recover a relative pose that is not aligned with the world frame established by \(f_1\) and \(f_2\). Building a chain of these relative poses frame-to-frame accumulates drift, leading to a globally inconsistent map.</p>
+      <p>The Perspective-<em>n</em>-Point (PnP) problem solves this by estimating the absolute pose of a new frame directly against the <em>existing</em> 3D map, utilizing 2D&ndash;3D correspondences. Once a 3D point \(\vect{X}_w\) triangulated from frames \(f_1\) and \(f_2\) is observed in frame \(f_3\), PnP recovers the absolute pose of \(f_3\) relative to the world frame, anchoring the trajectory to a consistent reference frame instead of drifting over time.</p>
+    </section>
+
+    <section id="setup">
+
+      <figure class="fig">
+        <img src="/assets/p3p_geometry.png" alt="" style="background-color: rgb(191, 197, 205);">
+        <figcaption><span class="fig-num">Fig. 1</span> P3P geometry showing Camera Coordinate and Image plane</figcaption>
+      </figure>
+
+      <p>Let \(\vect{X}_w = (X_w, Y_w, Z_w)^\top \in \mathbb{R}^3\) denote a 3D point expressed in the world coordinate frame, and let \(\vect{x} = (u, v, 1)^\top\) be the homogeneous pixel coordinate of its projection in the new frame. As previously mentioned in epipolar geometry blog, the normalized image coordinate is given by:</p>
+      <div class="eq-block">
+        \[
+        \hat{\vect{x}} = \mat{K}^{-1}\vect{x}
+        \]
+      </div>
+      <p>where \(\mat{K}\) is the camera's intrinsic matrix, \(\hat{\vect{x}}\) is the direction of the ray from the optical center to the 3D point expressed in the camera frame, independent of depth.</p>
+
+      <p>Since \(\vect{X}_c/Z_c = \hat{\vect{x}}\), the 3D point in the camera frame lies along this ray at some positive depth \(\lambda = Z_c\) \(\tag{check Section&nbsp;2.1 of the epipolar post for proof}\)</p>
+      <div class="eq-block">
+        \[
+        \vect{X}_c = \lambda\, \hat{\vect{x}}, \qquad \lambda \in \mathbb{R}^+ 
+        \]
+      </div>
+      <p>The rigid-body transformation from the world frame to the camera frame is given by the extrinsics \(\mat{R} \in SO(3)\), \(\vect{t} \in \mathbb{R}^3\):</p>
+      <div class="eq-block">
+        \[
+        \vect{X}_c = \mat{R}\, \vect{X}_w + \vect{t}
+        \]
+      </div>
+      <p>Equating the ray and extrinsic equations gives the fundamental PnP constraint:</p>
+
+      <div class="key-eq">
+        <span class="eq-tag">PnP constraint</span>
+        \[
+        \lambda\, \hat{\vect{x}} = \mat{R}\, \vect{X}_w + \vect{t}
+        \]
+      </div>
+    </section>
+
+    <section id="p3p">
+      <h2><span class="num">2</span> The P3P Constraint</h2>
+      <p>Rigid-body transformations preserve Euclidean distances, so the distance between any two 3D points is the same whether measured in the world frame or the camera frame. For three points \(\vect{X}_{w,1}, \vect{X}_{w,2}, \vect{X}_{w,3}\), define the side lengths of the triangle they form:</p>
+      <div class="eq-block">
+        \[
+        \begin{aligned}
+        a &= \|\vect{X}_{w,2} - \vect{X}_{w,1}\| = \|\vect{X}_{c,2} - \vect{X}_{c,1}\| \\
+        b &= \|\vect{X}_{w,3} - \vect{X}_{w,2}\| = \|\vect{X}_{c,3} - \vect{X}_{c,2}\| \\
+        c &= \|\vect{X}_{w,1} - \vect{X}_{w,3}\| = \|\vect{X}_{c,1} - \vect{X}_{c,3}\|
+        \end{aligned}
+        \]
+      </div>
+      <p>and let \(s_i = \|\vect{X}_{c,i}\| = \lambda_i \|\hat{\vect{x}}_i\|\) be the unknown distance from the camera center to point \(i\). Applying the Law of Cosines to the three triangles formed by the camera center \(O\) and each pair of points,</p>
+      <div class="eq-block">
+        \[
+        \begin{aligned}
+        a^2 &= s_1^2 + s_2^2 - 2 s_1 s_2 \cos \alpha, \\
+        b^2 &= s_2^2 + s_3^2 - 2 s_2 s_3 \cos \beta, \\
+        c^2 &= s_1^2 + s_3^2 - 2 s_1 s_3 \cos \gamma,
+        \end{aligned}
+        \]
+      </div>
+      <p>where \(\alpha, \beta, \gamma\) are the angles subtended at the camera center as shown in the figure. Because these angles \(\alpha, \beta, \gamma \) depend only on ray <em>directions</em>, they are computed directly from the image coordinates, independent of the unknown depths:</p>
+      <div class="eq-block">
+        \[
+        \cos\alpha = \frac{\hat{\vect{x}}_1^\top \hat{\vect{x}}_2}{\|\hat{\vect{x}}_1\|\, \|\hat{\vect{x}}_2\|}
+        \]
+      </div>
+      <p>Similarly, angles \(\beta, \gamma\) can be calculated.</p>
+      <p>The side lengths \(a, b, c\) are known (they are distances between the triangulated 3D map points \(\vect{X}_{w,i}\)), and \(\alpha, \beta, \gamma\) are known from above. Therefore, above three equations have three unknown distances \(s_1, s_2, s_3\) which is the classical <em>Perspective-Three-Point (P3P)</em> problem.</p>
+      <p>A camera pose \((\mat{R}, \vect{t})\) has 6 degrees of freedom: 3 for rotation and 3 for translation. Because each 2D&ndash;3D point correspondence provides 2 constraints (\(u, v\)), a minimum of 3 points yields 6 equations to solve for the 6 unknowns. However, since the P3P equations are non-linear, this minimal system produces up to four valid solutions, requiring a 4th point to find the true pose.</p>
+
+      <h3>2.1 &nbsp;Grunert's Solution</h3>
+      Instead of directly solving, we define ratios as following to simplify the calculation.
+      
+      <div class="eq-block">
+        \[
+        u = \frac{s_2}{s_1}, \qquad v = \frac{s_3}{s_1}
+        \]
+      </div>
+      <p>Dividing the Law-of-Cosines equations by \(s_1^2\) gives</p>
+      <div class="eq-block">
+        \[
+        \begin{aligned}
+        \left(\frac{a}{s_1}\right)^2 &= 1 + u^2 - 2u \cos\alpha, \\
+        \Rightarrow s_1^2 &= \frac{a^2}{1+u^2-2u\cos\alpha} \qquad (1) \\
+        \left(\frac{b}{s_1}\right)^2 &= u^2 + v^2 - 2uv \cos\beta, \\
+        \Rightarrow s_1^2 &= \frac{b^2}{u^2+v^2-2uv\cos\beta} \qquad (2) \\
+        \left(\frac{c}{s_1}\right)^2 &= 1 + v^2 - 2v \cos\gamma, \\
+        \Rightarrow s_1^2 &= \frac{c^2}{1+v^2-2v\cos\gamma} \qquad (3)
+        \end{aligned}
+        \]
+      </div>
+
+      <p>Combining (1) and (3):</p>
+      <div class="eq-block">
+        \[
+        \frac{a^2}{c^2}(1+v^2-2v\cos\gamma) = 1+u^2-2u\cos\alpha
+        \]
+      </div>
+      <p>or,</p>
+      <div class="eq-block">
+        \[
+        u^2 - \frac{a^2}{c^2}v^2 + \frac{2a^2}{c^2}v\cos\gamma - 2u\cos\alpha + \frac{c^2-a^2}{c^2} = 0 \qquad (4)
+        \]
+      </div>
+
+      <p>Combining (2) and (3):</p>
+      <div class="eq-block">
+        \[
+        \frac{b^2}{c^2}(1+v^2-2v\cos\gamma) = u^2+v^2-2uv\cos\beta
+        \]
+      </div>
+      <p>or,</p>
+      <div class="eq-block">
+        \[
+        u^2 + \left(\frac{c^2-b^2}{c^2}\right)v^2 - 2uv\cos\beta + \frac{2b^2}{c^2}u\cos\gamma - \frac{b^2}{c^2} = 0 \qquad (5)
+        \]
+      </div>
+      <p>or,</p>
+      <div class="eq-block">
+        \[
+        u^2 = \frac{-c^2+b^2}{c^2}v^2 + 2uv\cos\beta - \frac{2b^2}{c^2}v\cos\gamma + \frac{b^2}{c^2} \qquad (6)
+        \]
+      </div>
+
+      <p>Putting (6) in (4), we get:</p>
+      <div class="eq-block">
+        \[
+        \left(\frac{-c^2+b^2}{c^2}\right)v^2 + 2uv\cos\beta - \frac{2b^2}{c^2}v\cos\gamma + \frac{b^2}{c^2} - \frac{a^2}{c^2}v^2 + \frac{2va^2}{c^2}\cos\gamma - 2u\cos\gamma + \frac{c^2-a^2}{c^2} = 0
+        \]
+      </div>
+      <p>or,</p>
+      <div class="eq-block">
+        \[
+        v^2\left(\frac{b^2-a^2-c^2}{c^2}\right) + u(2v\cos\beta-2\cos\gamma) - 2\left(\frac{b^2-a^2}{c^2}\right)v\cos\gamma + \frac{c^2-a^2+b^2}{c^2} = 0
+        \]
+      </div>
+      <p>Solving for \(u\):</p>
+      <div class="eq-block">
+        \[
+        u = -\frac{\frac{b^2-a^2-c^2}{c^2}v^2 - 2\left(\frac{b^2-a^2}{c^2}\right)v\cos\gamma + \frac{c^2-a^2+b^2}{c^2}}{2v\cos\beta-2\cos\gamma}
+        \]
+      </div>
+      <div class="eq-block">
+        \[
+        u = \frac{\frac{b^2-a^2-c^2}{c^2}v^2 - 2\left(\frac{b^2-a^2}{c^2}\right)v\cos\gamma + \frac{c^2-a^2+b^2}{c^2}}{2\cos\gamma-2v\cos\beta}
+        \]
+      </div>
+
+      <p>Putting \(u\) into (5), we get:</p>
+      <div class="eq-block">
+        \[
+        \left(\frac{\frac{b^2-a^2-c^2}{c^2}v^2 - 2\left(\frac{b^2-a^2}{c^2}\right)v\cos\gamma + \frac{c^2-a^2+b^2}{c^2}}{2\cos\gamma-2v\cos\beta}\right)^2 + \frac{c^2-b^2}{c^2}v^2 - 2\left(\frac{\frac{b^2-a^2-c^2}{c^2}v^2 - 2\left(\frac{b^2-a^2}{c^2}\right)v\cos\gamma + \frac{c^2-a^2+b^2}{c^2}}{2\cos\gamma-2v\cos\beta}\right)v\cos\beta + \frac{2b^2}{c^2}v\cos\gamma - \frac{b^2}{c^2} = 0 \qquad (7)
+        \]
+      </div>
+
+      <p>This equation (7) is the fourth degree polynomial which can be expressed as</p>
+
+      <div class="eq-block">
+        \[
+        A_4 v^4 + A_3 v^3 + A_2 v^2 + A_1 v + A_0 = 0
+        \]
+      </div>
+      
+      <p>This equation (7) have up to four real, positive roots for \(v\), and each root gives a corresponding value \(u\) which we can use to get values of \(s_1, s_2, s_3\). </p>
+
+       <p>Then we can recover the 3D point positions in the camera frame along each known ray direction as: </p>
+        \[
+          \vect{X}_{c,i} = s_i\, \frac{\hat{\vect{x}}_i}{\|\hat{\vect{x}}_i\|}, \qquad i = 1,2,3.
+        \]
+       </section>
+       <section id="pose">
+
+      <h2>3 &nbsp;Estimating the Pose \((\mat{R}, \vect{t})\)</h2>
+      <p>Once \(\vect{X}_{c,1}, \vect{X}_{c,2}, \vect{X}_{c,3}\) are known, we have two matched point sets \(\{\vect{X}_{w,i}\}\) in the world frame and \(\{\vect{X}_{c,i}\}\) in the camera frame which are related by unknown rigid transform \(R, t\) for every candidate solution.</p>
+
+      <p>The centroids can be calculated as:</p>
+      <div class="eq-block">
+        \[
+        \bar{\vect{X}}_w = \frac{1}{3}\sum_{i=1}^3 \vect{X}_{w,i}, \qquad
+        \bar{\vect{X}}_c = \frac{1}{3}\sum_{i=1}^3 \vect{X}_{c,i},
+        \]
+      </div>
+      <p>and the cross-covariance matrix</p>
+      <div class="eq-block">
+        \[
+        \mat{H} = \sum_{i=1}^3 (\vect{X}_{w,i} - \bar{\vect{X}}_w)(\vect{X}_{c,i} - \bar{\vect{X}}_c)^\top
+        \]
+      </div>
+      <p>Taking the SVD \(\mat{H} = \mat{U}\, \mat{\Sigma}\, \mat{V}^\top\), the rotation and translation are</p>
+
+      <div class="key-eq">
+        <span class="eq-tag">Pose from SVD</span>
+        \[
+        \mat{R} = \mat{V}\mat{U}^\top, \qquad \vect{t} = \bar{\vect{X}}_c - \mat{R}\, \bar{\vect{X}}_w.
+        \]
+      </div>
+
+      <p>If \(\det(\mat{R}) = -1\), the solution has produced a reflection which can be corrected as in previous epipolar post, by flipping the sign of the last column of \(\mat{V}\) and recomputing \(\mat{R}\).</p>
+    
+    </section>
+
+    <section id="ambiguity">
+      <h2><span class="num">4</span>Resolving the Ambiguity</h2>
+      <p>Each of the real positive roots from equation (7) produces a geometrically valid triangle configuration with the same side lengths \(a, b, c\) and the same subtended angles \(\alpha, \beta, \gamma\). This is illustrated in the figure below from Cyrill Stachniss, though his notation is different from ours.</p>
+      <figure class="fig">
+        <img src="/assets/pnp_cyrill_four_solution.png" alt="" style="background-color: rgb(191, 197, 205);">
+        <figcaption><span class="fig-num">Fig. 2</span>Visualization of 4 possible solutions from equation (7).</figcaption>
+      </figure>
+
+
+      <p>To select the correct one, a fourth point correspondence \((\vect{X}_{w,4}, \hat{\vect{x}}_4)\) is introduced. For each candidate pose, \(\vect{X}_{w,4}\) is transformed into the camera frame and reprojected:</p>
+      
+      <div class="eq-block">
+        \[
+        \hat{\vect{x}}_4^{\,\text{pred}} = \frac{\mat{R}\vect{X}_{w,4} + \vect{t}}{\big[\mat{R}\vect{X}_{w,4} + \vect{t}\big]_z},
+        \]
+      </div>
+      <p>and the candidate whose predicted projection has the lowest reprojection error against the observed \(\hat{\vect{x}}_4\) is retained as the correct pose.</p>
+
+      <div class="note">
+        <span class="tag">Note</span>
+        <p>In practice, with noisy correspondences and \(n > 4\) points, RANSAC algorithm is used which keeps the one with the most inliers, rather than relying on a single 4th point.</p>
+      </div>
+    
+    </section>
+
+      
+    
+
+  </article>
+</div>
+
+<footer class="site-footer">
+  <div class="inner">
+    <span>&copy; 2026 Anil Banjade</span>
+    <span><a href="/index.html">Back to portfolio</a></span>
+  </div>
+</footer>
+
+<script src="/assets/navbar.js"></script>
+<script>
+  (function () {
+    var links = Array.prototype.slice.call(document.querySelectorAll('.toc a'));
+    var sections = links.map(function (a) {
+      return document.querySelector(a.getAttribute('href'));
+    });
+
+    function onScroll() {
+      var pos = window.scrollY + 140;
+      var activeIndex = 0;
+      sections.forEach(function (sec, i) {
+        if (sec && sec.offsetTop <= pos) activeIndex = i;
+      });
+      links.forEach(function (a, i) {
+        a.classList.toggle('active', i === activeIndex);
+      });
+    }
+
+    window.addEventListener('scroll', onScroll, { passive: true });
+    onScroll();
+  })();
+</script>
+
+</body>
+</html>

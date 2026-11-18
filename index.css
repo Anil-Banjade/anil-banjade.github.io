@@ -438,7 +438,7 @@ body {
   flex-direction: column;
   gap: 1.5px;
   background: var(--border);
-  border: 1px solid var(--border);
+  /* border: 1px solid var(--border); */
 }
 
 .project-card {
@@ -633,7 +633,7 @@ body {
   flex-direction: column;
   gap: 1.5px;
   background: var(--border);
-  border: 1px solid var(--border);
+  /* border: 1px solid var(--border); */
 }
 
 .blog-card {

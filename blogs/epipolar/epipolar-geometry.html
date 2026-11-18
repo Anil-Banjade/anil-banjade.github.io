@@ -59,7 +59,7 @@
     <p class="toc-label">Contents</p>
     <ol>
       <li><a href="#introduction">Introduction</a></li>
-      <li><a href="#notation">Notation</a></li>
+      <!-- <li><a href="#notation">Notation</a></li> -->
       <li><a href="#pinhole">The Pinhole Camera Model</a></li>
       <li><a href="#constraint">The Epipolar Constraint & Fundamental Matrix</a></li>
       <li><a href="#decomposing">Decomposing the Essential Matrix</a></li>
@@ -89,13 +89,13 @@
       
       </section>
 
-    <section id="notation">
-      <h2><span class="num">2</span> Notation</h2>
+    <!-- <section id="notation"> -->
+      <!-- <h2><span class="num">2</span> Notation</h2>
       <p>Bold letters denote vectors, upright letters denote matrices, and lowercase italic letters
         denote scalars. Subscripts <code>l</code> and <code>r</code> denotes the left and
-        right camera respectively.</p>
+        right camera respectively.</p> -->
 
-      <div class="table-wrap">
+      <!-- <div class="table-wrap">
         <table class="notation">
           <caption>Scalars</caption>
           <thead><tr><th>Symbol</th><th>Type</th><th>Meaning</th></tr></thead>
@@ -110,9 +110,9 @@
             <tr><td>\(\sigma, \sigma_1, \sigma_2, \sigma_3\)</td><td>scalar</td><td>singular values</td></tr>
           </tbody>
         </table>
-      </div>
+      </div> -->
 
-      <div class="table-wrap">
+      <!-- <div class="table-wrap">
         <table class="notation">
           <caption>Vectors — 3D points / directions</caption>
           <thead><tr><th>Symbol</th><th>Type</th><th>Meaning</th></tr></thead>
@@ -125,9 +125,9 @@
             <tr><td>\(\mathbf{u}_3\)</td><td>\(3\times1\)</td><td>third column of \(\mathrm{U}_E\)</td></tr>
           </tbody>
         </table>
-      </div>
+      </div> -->
 
-      <div class="table-wrap">
+      <!-- <div class="table-wrap">
         <table class="notation">
           <caption>Vectors — image space (homogeneous, \(3\times1\))</caption>
           <thead><tr><th>Symbol</th><th>Type</th><th>Meaning</th></tr></thead>
@@ -141,9 +141,9 @@
             <tr><td>\(\mathbf{f}\)</td><td>\(9\times1\)</td><td>vectorized entries of \(\mathrm{F}\), \(\mathbf{f} = (F_{11},\dots,F_{33})^\top\)</td></tr>
           </tbody>
         </table>
-      </div>
+      </div> -->
 
-      <div class="table-wrap">
+      <!-- <div class="table-wrap">
         <table class="notation">
           <caption>Matrices</caption>
           <thead><tr><th>Symbol</th><th>Type</th><th>Meaning</th></tr></thead>
@@ -162,9 +162,9 @@
             <tr><td>\(\mathrm{W}\)</td><td>\(3\times3\), fixed</td><td>helper matrix used to extract \(\mathrm{R}\) from the SVD of \(\mathrm{E}\) </td></tr>
           </tbody>
         </table>
-      </div> 
+      </div>  -->
 
-      <div class="table-wrap">
+      <!-- <div class="table-wrap">
         <table class="notation">
           <caption>Points and indices</caption>
           <thead><tr><th>Symbol</th><th>Type</th><th>Meaning</th></tr></thead>
@@ -173,13 +173,13 @@
             <tr><td>\(P\)</td><td>point in space</td><td>the observed 3D scene point</td></tr>
           </tbody>
         </table>
-      </div>
+      </div> -->
 
     <p>Before deriving the epipolar constraint, let's review the pinhole camera model, which relates
       3D points to image pixels.</p>
   
     <section id="pinhole">
-      <h2><span class="num">3</span> The Pinhole Camera Model</h2>
+      <h2><span class="num">2</span> The Pinhole Camera Model</h2>
       <p>A pinhole camera model maps a 3D point in the world to a 2D point in the image plane. In
         homogeneous coordinates this projection is linear:</p>
 
@@ -308,14 +308,14 @@
         From now on, \(\mathrm{R}, \mathbf{t}\) will represent pose of the right camera relative to the left camera.
       </p>
     </div>
-  </section>
+  <!-- </section> -->
 
 
    
 
    
     <section id="constraint">
-      <h2><span class="num">4</span> The Epipolar Constraint</h2>
+      <h2><span class="num">3</span> The Epipolar Constraint</h2>
 
       <p>Let \(O_l, O_r\) be the optical centers of the left and right cameras, and \(P\) a 3D scene
         point observed by both the cameras.</p>
@@ -559,7 +559,7 @@
 
     <!-- ============ 6. DECOMPOSING E ============ -->
     <section id="decomposing">
-      <h2><span class="num">5</span> Decomposing the Essential Matrix</h2>
+      <h2><span class="num">4</span> Decomposing the Essential Matrix</h2>
       <p>Because \(\mathrm{E} = [\mathbf{t}]_\times\mathrm{R}\) with \([\mathbf{t}]_\times\)
         skew-symmetric and \(\mathrm{R}\) orthonormal, \(\mathrm{E}\) has a specific singular value
         structure that lets \(\mathrm{R}\) and \(\mathbf{t}\) be recovered from its SVD,</p>
